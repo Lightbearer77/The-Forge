@@ -1,7 +1,7 @@
 {
   "name": "the-forge",
-  "version": "3.0.0",
-  "description": "The Forge — Personal Project Management System for the Ubermensch Hierarchy",
+  "version": "5.0.0",
+  "description": "The Forge v5 — Dependencies · AI Panel · Recurring Tasks · Obsidian Export · Completion History",
   "private": true,
   "type": "module",
   "scripts": {

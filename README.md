@@ -1,53 +1,36 @@
-# ⚒ The Forge — Personal Project Management
+# ⚒ The Forge v5.0
 
-A purpose-built project management system for the Ubermensch Hierarchy. Built with React + Vite.
+Personal Project Management for the Ubermensch Hierarchy.
 
 ## Features
 
-- **Four Views**: List, Kanban (HTML5 drag-and-drop), Calendar, Dashboard
-- **G1–G4 Goal Tagging**: Autonomous Man, Longhouse Tribe, Physical Foundation, Legacy Work
-- **6-Level Hierarchy**: Core Practices → Ultimate Man maturity levels
-- **13-Month Greek Calendar**: Alpha through Nu (28-day months)
-- **Auto-Cascading Milestones**: Parent milestones auto-complete when all subtasks finish
-- **Section Management**: Dropdown with inline create-new
-- **Persistent Storage**: localStorage for standalone, `window.storage` for Claude artifacts
-- **Task CRUD**: Full create, read, update, delete with detail panel
+- **List View** — Tasks sorted by priority/due date, blocked tasks sink to bottom
+- **Kanban Board** — Drag-and-drop between Backlog → To Do → In Progress → Done
+- **Calendar View** — Monthly calendar with task date ranges
+- **Dashboard** — Goal progress, hierarchy level coverage, completion history, blocked tasks
+- **Task Dependencies** — Blocking/blocked-by with visual 🔒 indicators
+- **AI Panel** — Claude API integration for intelligent task analysis (⚡ AI button)
+- **Recurring Tasks** — Daily/weekly/biweekly/monthly auto-regeneration
+- **Obsidian Export** — Formatted markdown matching the vault's MPL structure
+- **Completion History** — 14-day chart tracking daily completions
+- **Auto-Cascading Milestones** — Parent auto-completes when all subtasks done
+- **JSON Backup/Restore** — Full data export and import
+- **G1–G4 Goal Tagging** — Color-coded life goal alignment
+- **6-Level Hierarchy** — L1 Core Practices through L6 Ultimate Man
+- **localStorage Persistence** — Data persists across sessions
 
-## Quick Start
+## Architecture
 
-```bash
-npm install
-npm run dev
-```
+- `src/constants.js` — Goals, levels, statuses, Greek calendar, style constants
+- `src/storage.js` — localStorage persistence with v3→v5 migration, JSON export/import
+- `src/seed.js` — ~82 MPL tasks with stable IDs and dependency chains
+- `src/App.jsx` — Main application with all views and components
 
-Opens at `http://localhost:3000`.
+## Built For
 
-## Project Structure
+Connor's Sovereignty System — Obsidian vault, 13-month Greek calendar, four permanent life goals:
 
-```
-the-forge/
-├── index.html          # Entry HTML
-├── package.json        # Dependencies & scripts
-├── vite.config.js      # Vite configuration
-└── src/
-    ├── main.jsx        # React entry point
-    └── App.jsx         # Full Forge application
-```
-
-## Roadmap
-
-- [ ] Recurring tasks
-- [ ] Task dependencies (blocking/blocked-by)
-- [ ] Obsidian markdown export
-- [ ] AI panel (Claude API integration)
-- [ ] Multi-project support
-
-## Stack
-
-- React 18
-- Vite 5
-- No external UI libraries — custom components throughout
-
-## Version
-
-**v3.0** — April 2026
+- **G1**: Ultimate Autonomous Man
+- **G2**: Longhouse Tribe Legacy Fortress
+- **G3**: Unbreakable Physical & Mental Foundation
+- **G4**: High-Impact Legacy Work
