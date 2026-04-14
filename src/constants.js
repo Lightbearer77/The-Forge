@@ -49,6 +49,24 @@ export const RECURRENCE_OPTIONS = [
   { value: "monthly",  label: "Monthly (28 days)" },
 ];
 
+// ─── Greek Calendar Auto-Detection ───
+export const getGreekMonth = (date = new Date()) => {
+  const y = date.getFullYear();
+  const ranges = GREEK_MONTHS.map(m => {
+    const [sm, sd] = m.start.split("-").map(Number);
+    const [em, ed] = m.end.split("-").map(Number);
+    return { ...m, startDate: new Date(y, sm - 1, sd), endDate: new Date(y, em - 1, ed, 23, 59, 59) };
+  });
+  const found = ranges.find(r => date >= r.startDate && date <= r.endDate);
+  return found ? found.id : "M01";
+};
+
+export const getGreekWeek = (date = new Date()) => {
+  const jan1 = new Date(date.getFullYear(), 0, 1);
+  const days = Math.floor((date - jan1) / 86400000);
+  return Math.ceil((days + jan1.getDay() + 1) / 7);
+};
+
 export const selectStyle = {
   fontSize: 13, padding: "6px 10px", borderRadius: 5,
   border: "1px solid rgba(255,255,255,0.1)",

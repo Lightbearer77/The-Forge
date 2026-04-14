@@ -1,13 +1,24 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle } from "./constants.js";
+import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek } from "./constants.js";
 import { loadTasks, saveTasks, loadHistory, saveHistory, exportJSON, importJSON } from "./storage.js";
 import { SEED_TASKS } from "./seed.js";
 
 // ═══════════════════════════════════════════
-// THE FORGE v5 — Personal Project Management
+// THE FORGE v5.1 — Mobile · PWA · Greek Cal
 // Dependencies · AI Panel · Recurring Tasks
 // Obsidian Export · Completion History
 // ═══════════════════════════════════════════
+
+// ─── Mobile Detection ───
+const useIsMobile = () => {
+  const [mobile, setMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return mobile;
+};
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -198,7 +209,7 @@ const DependencyPicker = ({ task, allTasks, onAdd }) => {
 };
 
 // ─── Detail Panel ───
-const DetailPanel = ({ task, sections, onUpdate, onDelete, onClose, tasks, onToggle, onAddChild }) => {
+const DetailPanel = ({ task, sections, onUpdate, onDelete, onClose, tasks, onToggle, onAddChild, isMobile }) => {
   if (!task) return null;
   const children = tasks.filter(t => t.parentId === task.id);
   const blocked = isBlocked(task, tasks);
@@ -206,7 +217,7 @@ const DetailPanel = ({ task, sections, onUpdate, onDelete, onClose, tasks, onTog
   const blocking = getBlocking(task.id, tasks);
 
   return (
-    <div style={{ width: 360, background: "#1a1a1a", borderLeft: "1px solid rgba(255,255,255,0.08)", padding: 20, overflowY: "auto", height: "100%", flexShrink: 0 }}>
+    <div style={{ width: isMobile ? "100%" : 360, background: "#1a1a1a", borderLeft: isMobile ? "none" : "1px solid rgba(255,255,255,0.08)", padding: isMobile ? "16px 16px 80px" : 20, overflowY: "auto", height: "100%", flexShrink: 0, ...(isMobile ? { position: "fixed", inset: 0, zIndex: 50 } : {}) }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: 1 }}>Task Detail</div>
         <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 16 }}>✕</button>
@@ -345,7 +356,7 @@ const NewTaskModal = ({ sections, onAdd, onClose, currentMonth }) => {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: 10, padding: 24, width: 400, maxHeight: "80vh", overflowY: "auto", border: "1px solid rgba(255,255,255,0.1)" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: 10, padding: 24, width: "min(400px, 95vw)", maxHeight: "90vh", overflowY: "auto", border: "1px solid rgba(255,255,255,0.1)" }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: "#C9A84C", marginBottom: 16 }}>New Task</div>
         <Field label="Name"><input value={name} onChange={e => setName(e.target.value)} style={inputStyle} autoFocus onKeyDown={e => e.key === "Enter" && submit()} /></Field>
         <div style={{ display: "flex", gap: 8 }}>
@@ -479,7 +490,7 @@ const CalendarView = ({ tasks, month, onMonthChange, onSelect, selectedId }) => 
 };
 
 // ─── Dashboard ───
-const Dashboard = ({ tasks, history }) => {
+const Dashboard = ({ tasks, history, isMobile }) => {
   const active = tasks.filter(t => !t.parentId);
   const completed = active.filter(t => t.completed).length;
   const total = active.length;
@@ -515,7 +526,7 @@ const Dashboard = ({ tasks, history }) => {
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)", gap: isMobile ? 8 : 12, marginBottom: 20 }}>
         {[
           { label: "Total", value: total, color: "#C9A84C" },
           { label: "Completed", value: completed, color: "#5B8A72" },
@@ -530,7 +541,7 @@ const Dashboard = ({ tasks, history }) => {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 16, border: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>Goal Progress</div>
           {byGoal.map(g => (
@@ -610,7 +621,7 @@ const Dashboard = ({ tasks, history }) => {
 // ─── Export Modal ───
 const ExportModal = ({ markdown, onClose }) => (
   <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={onClose}>
-    <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: 10, padding: 24, width: 600, maxHeight: "80vh", display: "flex", flexDirection: "column", border: "1px solid rgba(255,255,255,0.1)" }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: 10, padding: 24, width: "min(600px, 95vw)", maxHeight: "80vh", display: "flex", flexDirection: "column", border: "1px solid rgba(255,255,255,0.1)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: "#C9A84C" }}>📋 Obsidian Export</span>
         <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>✕</button>
@@ -625,7 +636,7 @@ const ExportModal = ({ markdown, onClose }) => (
 );
 
 // ─── AI Panel ───
-const AIPanel = ({ tasks, history, onClose }) => {
+const AIPanel = ({ tasks, history, onClose, isMobile }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -691,7 +702,7 @@ ${od.map(t => `- OVERDUE [${t.priority}] [${t.goal}] "${t.name}" was due:${t.due
 
   return (
     <div style={{
-      position: "fixed", top: 0, right: 0, width: 420, height: "100vh",
+      position: "fixed", top: 0, right: 0, width: isMobile ? "100%" : 420, height: "100vh",
       background: "#141414", borderLeft: "1px solid rgba(201,168,76,0.2)",
       display: "flex", flexDirection: "column", zIndex: 100,
       boxShadow: "-8px 0 32px rgba(0,0,0,0.6)",
@@ -752,12 +763,13 @@ ${od.map(t => `- OVERDUE [${t.priority}] [${t.goal}] "${t.name}" was due:${t.due
 
 // ═══════ MAIN APP ═══════
 export default function ForgeApp() {
+  const isMobile = useIsMobile();
   const [tasks, setTasks] = useState([]);
   const [history, setHistory] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState("list");
   const [filterGoal, setFilterGoal] = useState("all");
-  const [filterMonth, setFilterMonth] = useState("M04");
+  const [filterMonth, setFilterMonth] = useState(() => getGreekMonth());
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterLevel, setFilterLevel] = useState("all");
   const [filterSection, setFilterSection] = useState("all");
@@ -768,6 +780,15 @@ export default function ForgeApp() {
   const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1);
   const [showExport, setShowExport] = useState(false);
   const [showAI, setShowAI] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Greek calendar info for header
+  const currentGreek = useMemo(() => {
+    const mid = getGreekMonth();
+    const gm = GREEK_MONTHS.find(g => g.id === mid);
+    const wk = getGreekWeek();
+    return { month: gm?.name || "?", code: mid, week: wk };
+  }, []);
 
   useEffect(() => {
     const saved = loadTasks();
@@ -887,63 +908,113 @@ export default function ForgeApp() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#0f0f0f", fontFamily: "'Segoe UI', -apple-system, sans-serif" }}>
       {/* Header */}
-      <div style={{ padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: "#C9A84C", letterSpacing: 1 }}>⚒ THE FORGE</div>
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: 1 }}>v5.0</div>
+      <div style={{ padding: isMobile ? "10px 12px" : "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: isMobile ? 8 : 16, flexShrink: 0 }}>
+        <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 800, color: "#C9A84C", letterSpacing: 1 }}>⚒{isMobile ? "" : " THE FORGE"}</div>
+        <div style={{ fontSize: 9, color: "rgba(201,168,76,0.5)", fontWeight: 600 }}>{currentGreek.month} W{currentGreek.week}</div>
         <div style={{ flex: 1 }} />
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: isMobile ? 2 : 4 }}>
           {[
-            { key: "list", label: "☰ List" },
-            { key: "kanban", label: "▦ Kanban" },
-            { key: "calendar", label: "📅 Calendar" },
-            { key: "dashboard", label: "◧ Dashboard" },
-          ].map(v => <Btn key={v.key} active={view === v.key} onClick={() => setView(v.key)}>{v.label}</Btn>)}
+            { key: "list", icon: "☰", label: "List" },
+            { key: "kanban", icon: "▦", label: "Kanban" },
+            { key: "calendar", icon: "📅", label: "Cal" },
+            { key: "dashboard", icon: "◧", label: "Dash" },
+          ].map(v => <Btn key={v.key} active={view === v.key} onClick={() => setView(v.key)}
+            style={isMobile ? { padding: "5px 8px", fontSize: 13 } : {}}>{isMobile ? v.icon : `${v.icon} ${v.label}`}</Btn>)}
         </div>
-        <Btn onClick={() => setShowAI(true)} style={{ background: "rgba(201,168,76,0.12)", color: "#C9A84C", fontWeight: 700 }}>⚡ AI</Btn>
-        <Btn onClick={() => setShowExport(true)}>📋 Export</Btn>
+        <Btn onClick={() => setShowAI(true)} style={{ background: "rgba(201,168,76,0.12)", color: "#C9A84C", fontWeight: 700, padding: isMobile ? "5px 8px" : undefined }}>⚡{isMobile ? "" : " AI"}</Btn>
+        {!isMobile && <Btn onClick={() => setShowExport(true)}>📋 Export</Btn>}
         <Btn onClick={() => {
-          const action = prompt("Type 'export' to backup JSON, 'import' to restore, or 'reset' to reload seed data:");
-          if (action === "export") exportJSON(tasks, history);
-          else if (action === "import") handleImport();
-          else if (action === "reset") { if (confirm("Reset all tasks to seed data? This cannot be undone.")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); } }
-        }}>⚙</Btn>
+          if (isMobile) {
+            const items = ["export JSON", "import JSON", "obsidian export", "reset seed data"];
+            const choice = prompt("Options:\n1) export\n2) import\n3) obsidian export\n4) reset\n\nType number:");
+            if (choice === "1") exportJSON(tasks, history);
+            else if (choice === "2") handleImport();
+            else if (choice === "3") setShowExport(true);
+            else if (choice === "4") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); } }
+          } else {
+            const action = prompt("Type 'export' to backup JSON, 'import' to restore, or 'reset' to reload seed data:");
+            if (action === "export") exportJSON(tasks, history);
+            else if (action === "import") handleImport();
+            else if (action === "reset") { if (confirm("Reset all tasks to seed data? This cannot be undone.")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); } }
+          }
+        }} style={isMobile ? { padding: "5px 8px" } : {}}>⚙</Btn>
         <button onClick={() => setShowNewTask(true)} style={{
-          fontSize: 12, padding: "6px 14px", borderRadius: 6, border: "none",
+          fontSize: isMobile ? 16 : 12, padding: isMobile ? "4px 10px" : "6px 14px", borderRadius: 6, border: "none",
           background: "rgba(201,168,76,0.2)", color: "#C9A84C", cursor: "pointer", fontWeight: 600,
-        }}>+ New Task</button>
+        }}>{isMobile ? "+" : "+ New Task"}</button>
       </div>
 
       {/* Filters */}
       {view !== "dashboard" && (
-        <div style={{ padding: "8px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ ...inputStyle, width: 160 }} />
-          <select value={filterGoal} onChange={e => setFilterGoal(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
-            <option value="all">All Goals</option>
-            {Object.entries(GOALS).map(([k, v]) => <option key={k} value={k}>{v.icon} {k}</option>)}
-          </select>
-          <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
-            <option value="all">All Months</option>
-            {GREEK_MONTHS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-          </select>
-          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
-            <option value="all">All Priorities</option>
-            {Object.keys(PRIORITIES).map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-          <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
-            <option value="all">All Levels</option>
-            {Object.entries(LEVELS).map(([k, v]) => <option key={k} value={k}>L{k}</option>)}
-          </select>
-          <select value={filterSection} onChange={e => setFilterSection(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
-            <option value="all">All Sections</option>
-            {sections.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <Btn active={showCompleted} onClick={() => setShowCompleted(!showCompleted)}>Show Done</Btn>
+        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
+          {isMobile ? (
+            <>
+              <div style={{ padding: "6px 12px", display: "flex", gap: 6, alignItems: "center" }}>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ ...inputStyle, flex: 1, fontSize: 12, padding: "5px 8px" }} />
+                <button onClick={() => setShowFilters(!showFilters)} style={{
+                  fontSize: 11, padding: "5px 10px", borderRadius: 5, border: "none", cursor: "pointer",
+                  background: showFilters ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.04)",
+                  color: showFilters ? "#C9A84C" : "rgba(255,255,255,0.45)", fontWeight: 600,
+                }}>⊞ Filter</button>
+                <Btn active={showCompleted} onClick={() => setShowCompleted(!showCompleted)} style={{ fontSize: 10, padding: "5px 8px" }}>✓</Btn>
+              </div>
+              {showFilters && (
+                <div style={{ padding: "4px 12px 8px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                  <select value={filterGoal} onChange={e => setFilterGoal(e.target.value)} style={{ ...selectStyle, fontSize: 11, padding: "4px 6px" }}>
+                    <option value="all">All Goals</option>
+                    {Object.entries(GOALS).map(([k, v]) => <option key={k} value={k}>{v.icon} {k}</option>)}
+                  </select>
+                  <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ ...selectStyle, fontSize: 11, padding: "4px 6px" }}>
+                    <option value="all">All Months</option>
+                    {GREEK_MONTHS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </select>
+                  <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ ...selectStyle, fontSize: 11, padding: "4px 6px" }}>
+                    <option value="all">All Priority</option>
+                    {Object.keys(PRIORITIES).map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} style={{ ...selectStyle, fontSize: 11, padding: "4px 6px" }}>
+                    <option value="all">All Levels</option>
+                    {Object.entries(LEVELS).map(([k, v]) => <option key={k} value={k}>L{k}</option>)}
+                  </select>
+                  <select value={filterSection} onChange={e => setFilterSection(e.target.value)} style={{ ...selectStyle, fontSize: 11, padding: "4px 6px", gridColumn: "1 / -1" }}>
+                    <option value="all">All Sections</option>
+                    {sections.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ padding: "8px 20px", display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ ...inputStyle, width: 160 }} />
+              <select value={filterGoal} onChange={e => setFilterGoal(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
+                <option value="all">All Goals</option>
+                {Object.entries(GOALS).map(([k, v]) => <option key={k} value={k}>{v.icon} {k}</option>)}
+              </select>
+              <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
+                <option value="all">All Months</option>
+                {GREEK_MONTHS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+              <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
+                <option value="all">All Priorities</option>
+                {Object.keys(PRIORITIES).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
+                <option value="all">All Levels</option>
+                {Object.entries(LEVELS).map(([k, v]) => <option key={k} value={k}>L{k}</option>)}
+              </select>
+              <select value={filterSection} onChange={e => setFilterSection(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
+                <option value="all">All Sections</option>
+                {sections.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <Btn active={showCompleted} onClick={() => setShowCompleted(!showCompleted)}>Show Done</Btn>
+            </div>
+          )}
         </div>
       )}
 
       {/* Content */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <div style={{ flex: 1, overflowY: "auto", padding: view === "list" ? 0 : 20 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: view === "list" ? 0 : isMobile ? 10 : 20 }}>
           {view === "list" && (
             <div>
               {filtered.length === 0 ? (
@@ -964,7 +1035,7 @@ export default function ForgeApp() {
           )}
 
           {view === "kanban" && (
-            <div style={{ display: "flex", gap: 12, minHeight: "100%" }}>
+            <div style={{ display: "flex", gap: 12, minHeight: "100%", overflowX: isMobile ? "auto" : "visible", paddingBottom: isMobile ? 12 : 0 }}>
               {STATUS_KEYS.map(s => (
                 <KanbanCol key={s} status={s} tasks={filtered.filter(t => t.status === s)} allTasks={tasks}
                   onDrop={changeStatus} onToggle={toggleComplete} onSelect={setSelectedId} selectedId={selectedId} />
@@ -977,18 +1048,24 @@ export default function ForgeApp() {
               onSelect={setSelectedId} selectedId={selectedId} />
           )}
 
-          {view === "dashboard" && <Dashboard tasks={tasks} history={history} />}
+          {view === "dashboard" && <Dashboard tasks={tasks} history={history} isMobile={isMobile} />}
         </div>
 
-        {selectedTask && (
+        {selectedTask && !isMobile && (
           <DetailPanel task={selectedTask} sections={sections} onUpdate={updateTask} onDelete={deleteTask}
-            onClose={() => setSelectedId(null)} tasks={tasks} onToggle={toggleComplete} onAddChild={() => addChild(selectedTask.id)} />
+            onClose={() => setSelectedId(null)} tasks={tasks} onToggle={toggleComplete} onAddChild={() => addChild(selectedTask.id)} isMobile={false} />
         )}
       </div>
 
-      {showNewTask && <NewTaskModal sections={sections} onAdd={addTask} onClose={() => setShowNewTask(false)} currentMonth={filterMonth !== "all" ? filterMonth : "M04"} />}
+      {/* Mobile Detail Panel (full-screen overlay) */}
+      {selectedTask && isMobile && (
+        <DetailPanel task={selectedTask} sections={sections} onUpdate={updateTask} onDelete={deleteTask}
+          onClose={() => setSelectedId(null)} tasks={tasks} onToggle={toggleComplete} onAddChild={() => addChild(selectedTask.id)} isMobile={true} />
+      )}
+
+      {showNewTask && <NewTaskModal sections={sections} onAdd={addTask} onClose={() => setShowNewTask(false)} currentMonth={filterMonth !== "all" ? filterMonth : getGreekMonth()} />}
       {showExport && <ExportModal markdown={exportMd} onClose={() => setShowExport(false)} />}
-      {showAI && <><div onClick={() => setShowAI(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 99 }} /><AIPanel tasks={tasks} history={history} onClose={() => setShowAI(false)} /></>}
+      {showAI && <><div onClick={() => setShowAI(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 99 }} /><AIPanel tasks={tasks} history={history} onClose={() => setShowAI(false)} isMobile={isMobile} /></>}
     </div>
   );
 }
