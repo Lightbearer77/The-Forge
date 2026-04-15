@@ -78,3 +78,19 @@ export const importJSON = (file) => {
     reader.readAsText(file);
   });
 };
+
+// ─── Sync Code (no backend needed) ───
+export const generateSyncCode = (tasks, history, activity) => {
+  const data = { t: tasks, h: history, a: activity, v: "5.5", ts: Date.now() };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+};
+
+export const applySyncCode = (code) => {
+  try {
+    const json = decodeURIComponent(escape(atob(code.trim())));
+    const data = JSON.parse(json);
+    return { tasks: data.t, history: data.h, activity: data.a, timestamp: data.ts };
+  } catch (e) {
+    return null;
+  }
+};

@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek, getWeekBounds } from "./constants.js";
-import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, exportJSON, importJSON } from "./storage.js";
+import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, exportJSON, importJSON, generateSyncCode, applySyncCode } from "./storage.js";
 import { SEED_TASKS } from "./seed.js";
 
 // ═══════════════════════════════════════════
-// THE FORGE v5.4 — Undo · Sort · Activity Log
+// THE FORGE v5.5 — Batch · Sync · Timeline
 // Dependencies · AI Panel · Recurring Tasks
 // Obsidian Export · Completion History
 // ═══════════════════════════════════════════
@@ -124,27 +124,41 @@ const UndoToast = ({ message, onUndo, onDismiss }) => {
 };
 
 // ─── Task Row ───
-const TaskRow = ({ task, onToggle, onSelect, selected, childCount, childDone, blocked, blockerNames, allTasks }) => {
+const TaskRow = ({ task, onToggle, onSelect, selected, childCount, childDone, blocked, blockerNames, allTasks, batchMode, batchSelected, onBatchToggle }) => {
   const g = GOALS[task.goal];
   const overdue = !task.completed && task.due && new Date(task.due + "T23:59:59") < new Date();
   const hasRange = task.start && task.due && task.start !== task.due;
   const blocking = getBlocking(task.id, allTasks);
 
+  const handleClick = () => {
+    if (batchMode) { onBatchToggle(task.id); return; }
+    onSelect(task.id);
+  };
+
   return (
-    <div onClick={() => onSelect(task.id)} style={{
+    <div onClick={handleClick} style={{
       display: "flex", alignItems: "center", gap: 8, padding: "7px 12px",
-      background: selected ? "rgba(201,168,76,0.08)" : "transparent",
+      background: batchSelected ? "rgba(201,168,76,0.12)" : selected ? "rgba(201,168,76,0.08)" : "transparent",
       borderLeft: `3px solid ${g?.color || "#555"}`,
       borderBottom: "1px solid rgba(255,255,255,0.04)",
       cursor: "pointer", opacity: task.completed ? 0.45 : blocked ? 0.55 : 1,
     }}>
-      <button onClick={e => { e.stopPropagation(); if (!blocked) onToggle(task.id); }} title={blocked ? "Blocked — complete dependencies first" : ""} style={{
+      {batchMode ? (
+        <div style={{
+          width: 17, height: 17, borderRadius: 3, flexShrink: 0,
+          border: `1.5px solid ${batchSelected ? "#C9A84C" : "rgba(255,255,255,0.25)"}`,
+          background: batchSelected ? "#C9A84C" : "transparent",
+          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#000",
+        }}>{batchSelected ? "✓" : ""}</div>
+      ) : (
+        <button onClick={e => { e.stopPropagation(); if (!blocked) onToggle(task.id); }} title={blocked ? "Blocked" : ""} style={{
         width: 17, height: 17, borderRadius: 3,
         border: `1.5px solid ${task.completed ? g?.color : blocked ? "#E8453C" : "rgba(255,255,255,0.25)"}`,
         background: task.completed ? g?.color : "transparent",
         cursor: blocked ? "not-allowed" : "pointer", flexShrink: 0,
         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff",
       }}>{task.completed ? "✓" : blocked ? "🔒" : ""}</button>
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 13, fontWeight: task.milestone ? 700 : 400,
@@ -548,14 +562,13 @@ const WeekFocusView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMobi
 };
 
 // ─── Grouped List View ───
-const GroupedListView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMobile }) => {
+const GroupedListView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMobile, batchMode, batchIds, onBatchToggle }) => {
   const overdue = tasks.filter(t => !t.completed && t.due && t.due < todayStr());
   const [overdueOpen, setOverdueOpen] = useState(true);
   const [collapsedSections, setCollapsedSections] = useState({});
 
   const toggleSection = (s) => setCollapsedSections(prev => ({ ...prev, [s]: !prev[s] }));
 
-  // Group by section
   const grouped = {};
   tasks.forEach(t => {
     const s = t.section || "Unsorted";
@@ -570,7 +583,8 @@ const GroupedListView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMo
     const bNames = bk ? getBlockers(task, allTasks).filter(b => !b.completed).map(b => b.name).join(", ") : "";
     return <TaskRow key={task.id} task={task} onToggle={onToggle} onSelect={onSelect}
       selected={selectedId === task.id} childCount={children.length} childDone={children.filter(c => c.completed).length}
-      blocked={bk} blockerNames={bNames} allTasks={allTasks} />;
+      blocked={bk} blockerNames={bNames} allTasks={allTasks}
+      batchMode={batchMode} batchSelected={batchIds.has(task.id)} onBatchToggle={onBatchToggle} />;
   };
 
   return (
@@ -613,6 +627,170 @@ const GroupedListView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMo
 
       {tasks.length === 0 && (
         <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.3)" }}>No tasks match filters</div>
+      )}
+    </div>
+  );
+};
+
+// ─── Batch Action Bar ───
+const BatchBar = ({ count, onComplete, onDelete, onMove, onCancel, isMobile }) => (
+  <div style={{
+    position: "fixed", bottom: 0, left: 0, right: 0, padding: isMobile ? "10px 12px" : "10px 20px",
+    background: "#1a1a1a", borderTop: "1px solid rgba(201,168,76,0.3)",
+    display: "flex", alignItems: "center", gap: 8, zIndex: 60,
+    boxShadow: "0 -4px 20px rgba(0,0,0,0.5)",
+  }}>
+    <span style={{ fontSize: 12, color: "#C9A84C", fontWeight: 700, marginRight: 8 }}>{count} selected</span>
+    <button onClick={onComplete} style={{ fontSize: 11, padding: "6px 12px", borderRadius: 5, border: "none", background: "rgba(91,138,114,0.2)", color: "#5B8A72", cursor: "pointer", fontWeight: 600 }}>✓ Complete</button>
+    <select onChange={e => { if (e.target.value) onMove(e.target.value); e.target.value = ""; }} style={{ fontSize: 11, padding: "6px 8px", borderRadius: 5, border: "none", background: "rgba(74,106,139,0.2)", color: "#4A6A8B", cursor: "pointer" }}>
+      <option value="">→ Move to...</option>
+      {STATUS_KEYS.map(s => <option key={s} value={s}>{STATUS_META[s].name}</option>)}
+    </select>
+    <button onClick={onDelete} style={{ fontSize: 11, padding: "6px 12px", borderRadius: 5, border: "none", background: "rgba(232,69,60,0.15)", color: "#E8453C", cursor: "pointer", fontWeight: 600 }}>🗑 Delete</button>
+    <div style={{ flex: 1 }} />
+    <button onClick={onCancel} style={{ fontSize: 11, padding: "6px 12px", borderRadius: 5, border: "none", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Cancel</button>
+  </div>
+);
+
+// ─── Sync Modal ───
+const SyncModal = ({ tasks, history, activity, onApply, onClose }) => {
+  const [tab, setTab] = useState("export");
+  const [code, setCode] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+
+  const syncCode = useMemo(() => generateSyncCode(tasks, history, activity), [tasks, history, activity]);
+
+  const handleApply = () => {
+    const data = applySyncCode(code);
+    if (!data) { setError("Invalid sync code"); return; }
+    const age = Date.now() - (data.timestamp || 0);
+    const ageStr = age < 60000 ? "just now" : age < 3600000 ? `${Math.round(age/60000)}m ago` : `${Math.round(age/3600000)}h ago`;
+    if (confirm(`Apply sync data? (${data.tasks?.length || 0} tasks, generated ${ageStr})\n\nThis will replace all current data.`)) {
+      onApply(data);
+      onClose();
+    }
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: 10, padding: 24, width: "min(450px, 95vw)", maxHeight: "80vh", display: "flex", flexDirection: "column", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#C9A84C" }}>🔄 Sync</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>✕</button>
+        </div>
+        <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+          <Btn active={tab === "export"} onClick={() => setTab("export")}>Export Code</Btn>
+          <Btn active={tab === "import"} onClick={() => setTab("import")}>Import Code</Btn>
+        </div>
+        {tab === "export" ? (
+          <>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>Copy this code and paste it on your other device:</div>
+            <textarea value={syncCode} readOnly style={{ ...inputStyle, minHeight: 120, fontFamily: "monospace", fontSize: 9, resize: "none", wordBreak: "break-all" }} />
+            <button onClick={() => { navigator.clipboard.writeText(syncCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }} style={{
+              marginTop: 10, padding: "8px 16px", borderRadius: 6, border: "none",
+              background: copied ? "rgba(91,138,114,0.3)" : "rgba(201,168,76,0.2)",
+              color: copied ? "#5B8A72" : "#C9A84C", cursor: "pointer", fontWeight: 600,
+            }}>{copied ? "✓ Copied!" : "Copy to Clipboard"}</button>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>Paste a sync code from another device:</div>
+            <textarea value={code} onChange={e => { setCode(e.target.value); setError(""); }} placeholder="Paste sync code here..." style={{ ...inputStyle, minHeight: 120, fontFamily: "monospace", fontSize: 9, resize: "none" }} />
+            {error && <div style={{ fontSize: 11, color: "#E8453C", marginTop: 6 }}>{error}</div>}
+            <button onClick={handleApply} disabled={!code.trim()} style={{
+              marginTop: 10, padding: "8px 16px", borderRadius: 6, border: "none",
+              background: code.trim() ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.04)",
+              color: code.trim() ? "#C9A84C" : "rgba(255,255,255,0.2)", cursor: code.trim() ? "pointer" : "not-allowed", fontWeight: 600,
+            }}>Apply Sync Code</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Timeline View ───
+const TimelineView = ({ tasks, onSelect, selectedId, isMobile }) => {
+  const active = tasks.filter(t => !t.parentId && t.start && t.due);
+  const today = todayStr();
+
+  // Calculate visible range: 2 weeks back to 6 weeks forward
+  const rangeStart = addDays(today, -14);
+  const rangeEnd = addDays(today, 42);
+  const totalDays = 56;
+
+  const inRange = active.filter(t => t.due >= rangeStart && t.start <= rangeEnd);
+  const byGoal = {};
+  inRange.forEach(t => {
+    if (!byGoal[t.goal]) byGoal[t.goal] = [];
+    byGoal[t.goal].push(t);
+  });
+
+  const dayToX = (d) => {
+    const diff = (new Date(d + "T00:00:00") - new Date(rangeStart + "T00:00:00")) / 86400000;
+    return (diff / totalDays) * 100;
+  };
+
+  // Week markers
+  const weeks = [];
+  for (let i = 0; i < totalDays; i += 7) {
+    const d = addDays(rangeStart, i);
+    weeks.push({ date: d, x: (i / totalDays) * 100 });
+  }
+
+  return (
+    <div style={{ padding: isMobile ? 10 : 20 }}>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 16 }}>Timeline · {fmtDate(rangeStart)} → {fmtDate(rangeEnd)}</div>
+
+      {/* Week headers */}
+      <div style={{ position: "relative", height: 24, marginBottom: 4, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        {weeks.map((w, i) => (
+          <div key={i} style={{ position: "absolute", left: `${w.x}%`, fontSize: 9, color: "rgba(255,255,255,0.3)", whiteSpace: "nowrap" }}>
+            {fmtDate(w.date)}
+          </div>
+        ))}
+        {/* Today marker */}
+        <div style={{ position: "absolute", left: `${dayToX(today)}%`, top: 0, bottom: -4, width: 2, background: "#C9A84C", zIndex: 2 }} />
+      </div>
+
+      {/* Goal groups */}
+      {Object.entries(byGoal).map(([goal, goalTasks]) => (
+        <div key={goal} style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: GOALS[goal]?.color, marginBottom: 6 }}>
+            {GOALS[goal]?.icon} {goal} — {GOALS[goal]?.name}
+          </div>
+          {goalTasks.sort((a, b) => a.start.localeCompare(b.start)).map(task => {
+            const left = Math.max(0, dayToX(task.start));
+            const right = Math.min(100, dayToX(task.due));
+            const width = Math.max(1.5, right - left);
+            const overdue = !task.completed && task.due < today;
+            return (
+              <div key={task.id} onClick={() => onSelect(task.id)} style={{
+                position: "relative", height: 22, marginBottom: 3, cursor: "pointer",
+              }}>
+                <div style={{
+                  position: "absolute", left: `${left}%`, width: `${width}%`, top: 2, height: 18,
+                  background: task.completed ? "rgba(91,138,114,0.3)" : overdue ? "rgba(232,69,60,0.3)" : `${GOALS[goal]?.color}33`,
+                  border: `1px solid ${task.completed ? "rgba(91,138,114,0.5)" : overdue ? "rgba(232,69,60,0.5)" : GOALS[goal]?.color + "66"}`,
+                  borderRadius: 3, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden",
+                  outline: selectedId === task.id ? "2px solid rgba(201,168,76,0.5)" : "none",
+                  opacity: task.completed ? 0.5 : 1,
+                }}>
+                  <span style={{
+                    fontSize: 9, color: task.completed ? "rgba(255,255,255,0.4)" : "#e5e5e5",
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                    textDecoration: task.completed ? "line-through" : "none",
+                  }}>{task.name}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      {inRange.length === 0 && (
+        <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.3)" }}>No tasks with date ranges in this window</div>
       )}
     </div>
   );
@@ -1051,8 +1229,11 @@ export default function ForgeApp() {
   const [showAI, setShowAI] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [movingId, setMovingId] = useState(null); // touch kanban
-  const [sortBy, setSortBy] = useState("default"); // default, due, priority, goal, name
+  const [sortBy, setSortBy] = useState("default");
   const [activity, setActivity] = useState([]);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchIds, setBatchIds] = useState(new Set());
+  const [showSync, setShowSync] = useState(false);
   const undoStack = useRef([]);
   const [undoToast, setUndoToast] = useState(null); // { message, snapshot }
 
@@ -1261,12 +1442,16 @@ export default function ForgeApp() {
             { key: "list", icon: "☰", label: "List" },
             { key: "week", icon: "📌", label: "Week" },
             { key: "kanban", icon: "▦", label: "Kanban" },
+            { key: "timeline", icon: "⏤", label: "Time" },
             { key: "calendar", icon: "📅", label: "Cal" },
             { key: "dashboard", icon: "◧", label: "Dash" },
           ].map(v => <Btn key={v.key} active={view === v.key} onClick={() => setView(v.key)}
             style={isMobile ? { padding: "5px 8px", fontSize: 13 } : {}}>{isMobile ? v.icon : `${v.icon} ${v.label}`}</Btn>)}
         </div>
         <Btn onClick={() => setShowAI(true)} style={{ background: "rgba(201,168,76,0.12)", color: "#C9A84C", fontWeight: 700, padding: isMobile ? "5px 8px" : undefined }}>⚡{isMobile ? "" : " AI"}</Btn>
+        <Btn onClick={() => { setBatchMode(!batchMode); setBatchIds(new Set()); }} active={batchMode}
+          style={isMobile ? { padding: "5px 8px" } : {}}>☑{isMobile ? "" : " Batch"}</Btn>
+        <Btn onClick={() => setShowSync(true)} style={isMobile ? { padding: "5px 8px" } : {}}>🔄{isMobile ? "" : " Sync"}</Btn>
         {!isMobile && <Btn onClick={() => setShowExport(true)}>📋 Export</Btn>}
         <Btn onClick={() => {
           if (isMobile) {
@@ -1290,7 +1475,7 @@ export default function ForgeApp() {
       </div>
 
       {/* Filters */}
-      {view !== "dashboard" && view !== "week" && (
+      {view !== "dashboard" && view !== "week" && view !== "timeline" && (
         <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
           {isMobile ? (
             <>
@@ -1376,7 +1561,8 @@ export default function ForgeApp() {
         <div style={{ flex: 1, overflowY: "auto", padding: (view === "list") ? 0 : (view === "week") ? 0 : isMobile ? 10 : 20 }}>
           {view === "list" && (
             <GroupedListView tasks={filtered} allTasks={tasks} onToggle={toggleComplete}
-              onSelect={setSelectedId} selectedId={selectedId} isMobile={isMobile} />
+              onSelect={setSelectedId} selectedId={selectedId} isMobile={isMobile}
+              batchMode={batchMode} batchIds={batchIds} onBatchToggle={(id) => setBatchIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; })} />
           )}
 
           {view === "week" && (
@@ -1407,6 +1593,10 @@ export default function ForgeApp() {
               onSelect={setSelectedId} selectedId={selectedId} />
           )}
 
+          {view === "timeline" && (
+            <TimelineView tasks={tasks} onSelect={setSelectedId} selectedId={selectedId} isMobile={isMobile} />
+          )}
+
           {view === "dashboard" && <Dashboard tasks={tasks} history={history} isMobile={isMobile} activity={activity} />}
         </div>
 
@@ -1425,6 +1615,43 @@ export default function ForgeApp() {
       {showNewTask && <NewTaskModal sections={sections} onAdd={addTask} onClose={() => setShowNewTask(false)} currentMonth={filterMonth !== "all" ? filterMonth : getGreekMonth()} />}
       {showExport && <ExportModal markdown={exportMd} onClose={() => setShowExport(false)} />}
       {showAI && <><div onClick={() => setShowAI(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 99 }} /><AIPanel tasks={tasks} history={history} onClose={() => setShowAI(false)} isMobile={isMobile} /></>}
+
+      {/* Batch Action Bar */}
+      {batchMode && batchIds.size > 0 && (
+        <BatchBar count={batchIds.size} isMobile={isMobile}
+          onComplete={() => {
+            undoStack.current.push({ tasks: JSON.parse(JSON.stringify(tasks)), message: `Batch complete ${batchIds.size} tasks` });
+            setTasks(prev => prev.map(t => batchIds.has(t.id) ? { ...t, completed: true, completedDate: todayStr(), status: "done" } : t));
+            setUndoToast({ message: `✓ Completed ${batchIds.size} tasks` });
+            setActivity(prev => [...prev, { action: "completed", taskName: `${batchIds.size} tasks (batch)`, timestamp: new Date().toISOString() }]);
+            setBatchIds(new Set()); setBatchMode(false);
+          }}
+          onDelete={() => {
+            if (!confirm(`Delete ${batchIds.size} tasks?`)) return;
+            undoStack.current.push({ tasks: JSON.parse(JSON.stringify(tasks)), message: `Batch delete ${batchIds.size} tasks` });
+            setTasks(prev => prev.filter(t => !batchIds.has(t.id)).map(t => ({ ...t, blockedBy: (t.blockedBy || []).filter(id => !batchIds.has(id)) })));
+            setUndoToast({ message: `🗑 Deleted ${batchIds.size} tasks` });
+            setActivity(prev => [...prev, { action: "deleted", taskName: `${batchIds.size} tasks (batch)`, timestamp: new Date().toISOString() }]);
+            setBatchIds(new Set()); setBatchMode(false);
+          }}
+          onMove={(status) => {
+            undoStack.current.push({ tasks: JSON.parse(JSON.stringify(tasks)), message: `Batch move ${batchIds.size} tasks` });
+            setTasks(prev => prev.map(t => batchIds.has(t.id) ? { ...t, status, completed: status === "done", completedDate: status === "done" ? todayStr() : null } : t));
+            setUndoToast({ message: `→ Moved ${batchIds.size} tasks to ${STATUS_META[status].name}` });
+            setBatchIds(new Set()); setBatchMode(false);
+          }}
+          onCancel={() => { setBatchIds(new Set()); setBatchMode(false); }}
+        />
+      )}
+
+      {/* Sync Modal */}
+      {showSync && <SyncModal tasks={tasks} history={history} activity={activity}
+        onApply={(data) => {
+          if (data.tasks) { setTasks(data.tasks); saveTasks(data.tasks); }
+          if (data.history) { setHistory(data.history); saveHistory(data.history); }
+          if (data.activity) { setActivity(data.activity); saveActivity(data.activity); }
+        }}
+        onClose={() => setShowSync(false)} />}
 
       {/* Undo Toast */}
       {undoToast && <UndoToast message={undoToast.message} onUndo={doUndo} onDismiss={() => setUndoToast(null)} />}

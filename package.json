@@ -1,6 +1,6 @@
 {
   "name": "the-forge",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "description": "The Forge v5 — Dependencies · AI Panel · Recurring Tasks · Obsidian Export · Completion History",
   "private": true,
   "type": "module",
