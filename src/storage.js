@@ -1,5 +1,6 @@
 const TASKS_KEY = "forge-pm-tasks-v5";
 const HISTORY_KEY = "forge-pm-history-v5";
+const ACTIVITY_KEY = "forge-pm-activity-v5";
 
 // Migration: carry over v3 data if v5 is empty
 const V3_KEY = "forge-pm-tasks-v3";
@@ -40,8 +41,23 @@ export const saveHistory = (history) => {
   catch (e) { console.error("Save history failed:", e); }
 };
 
-export const exportJSON = (tasks, history) => {
-  const data = { tasks, history, exportedAt: new Date().toISOString(), version: "5.0" };
+export const loadActivity = () => {
+  try {
+    const data = localStorage.getItem(ACTIVITY_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch { return []; }
+};
+
+export const saveActivity = (log) => {
+  try {
+    // Keep last 500 entries max
+    const trimmed = log.slice(-500);
+    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(trimmed));
+  } catch (e) { console.error("Save activity failed:", e); }
+};
+
+export const exportJSON = (tasks, history, activity) => {
+  const data = { tasks, history, activity, exportedAt: new Date().toISOString(), version: "5.4" };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

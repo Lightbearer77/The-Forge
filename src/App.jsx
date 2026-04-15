@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek, getWeekBounds } from "./constants.js";
-import { loadTasks, saveTasks, loadHistory, saveHistory, exportJSON, importJSON } from "./storage.js";
+import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, exportJSON, importJSON } from "./storage.js";
 import { SEED_TASKS } from "./seed.js";
 
 // ═══════════════════════════════════════════
-// THE FORGE v5.3 — Week Focus · Overdue · Sections
+// THE FORGE v5.4 — Undo · Sort · Activity Log
 // Dependencies · AI Panel · Recurring Tasks
 // Obsidian Export · Completion History
 // ═══════════════════════════════════════════
@@ -96,6 +96,32 @@ const Field = ({ label, children }) => (
     {children}
   </div>
 );
+
+// ─── Undo Toast ───
+const UndoToast = ({ message, onUndo, onDismiss }) => {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 5000);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+
+  return (
+    <div style={{
+      position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)",
+      background: "#2a2a2a", border: "1px solid rgba(201,168,76,0.3)", borderRadius: 8,
+      padding: "10px 16px", display: "flex", alignItems: "center", gap: 12,
+      zIndex: 200, boxShadow: "0 4px 20px rgba(0,0,0,0.5)", maxWidth: "90vw",
+    }}>
+      <span style={{ fontSize: 12, color: "#e5e5e5", flex: 1 }}>{message}</span>
+      <button onClick={onUndo} style={{
+        fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 4, border: "none",
+        background: "rgba(201,168,76,0.2)", color: "#C9A84C", cursor: "pointer",
+      }}>Undo</button>
+      <button onClick={onDismiss} style={{
+        background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 14,
+      }}>✕</button>
+    </div>
+  );
+};
 
 // ─── Task Row ───
 const TaskRow = ({ task, onToggle, onSelect, selected, childCount, childDone, blocked, blockerNames, allTasks }) => {
@@ -643,7 +669,7 @@ const CalendarView = ({ tasks, month, onMonthChange, onSelect, selectedId }) => 
 };
 
 // ─── Dashboard ───
-const Dashboard = ({ tasks, history, isMobile }) => {
+const Dashboard = ({ tasks, history, isMobile, activity }) => {
   const active = tasks.filter(t => !t.parentId);
   const completed = active.filter(t => t.completed).length;
   const total = active.length;
@@ -822,7 +848,7 @@ const Dashboard = ({ tasks, history, isMobile }) => {
       </div>
 
       {blockedTasks.length > 0 && (
-        <div style={{ background: "rgba(139,74,74,0.1)", borderRadius: 8, padding: 16, border: "1px solid rgba(139,74,74,0.2)" }}>
+        <div style={{ background: "rgba(139,74,74,0.1)", borderRadius: 8, padding: 16, border: "1px solid rgba(139,74,74,0.2)", marginBottom: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "#8B4A4A", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>🔒 Blocked Tasks ({blockedTasks.length})</div>
           {blockedTasks.map(t => {
             const bNames = getBlockers(t, tasks).filter(b => !b.completed).map(b => b.name).join(", ");
@@ -831,6 +857,27 @@ const Dashboard = ({ tasks, history, isMobile }) => {
                 <span style={{ color: GOALS[t.goal]?.color }}>{GOALS[t.goal]?.icon} </span>
                 <span style={{ color: "#e5e5e5" }}>{t.name}</span>
                 <div style={{ fontSize: 10, color: "#E8453C", marginTop: 2 }}>Waiting on: {bNames}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Activity Log */}
+      {activity && activity.length > 0 && (
+        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 16, border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>📝 Recent Activity</div>
+          {activity.slice(-15).reverse().map((a, i) => {
+            const time = new Date(a.timestamp);
+            const icons = { completed: "✓", deleted: "🗑", created: "✚", status: "→" };
+            const colors = { completed: "#5B8A72", deleted: "#E8453C", created: "#C9A84C", status: "#D4A84B" };
+            return (
+              <div key={i} style={{ display: "flex", gap: 8, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.03)", alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: colors[a.action] || "#888", flexShrink: 0, width: 14 }}>{icons[a.action] || "•"}</span>
+                <span style={{ fontSize: 11, color: "#e5e5e5", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.taskName}</span>
+                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>
+                  {time.toLocaleDateString("en-US", { month: "short", day: "numeric" })} {time.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                </span>
               </div>
             );
           })}
@@ -1004,6 +1051,28 @@ export default function ForgeApp() {
   const [showAI, setShowAI] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [movingId, setMovingId] = useState(null); // touch kanban
+  const [sortBy, setSortBy] = useState("default"); // default, due, priority, goal, name
+  const [activity, setActivity] = useState([]);
+  const undoStack = useRef([]);
+  const [undoToast, setUndoToast] = useState(null); // { message, snapshot }
+
+  const pushUndo = (message) => {
+    undoStack.current.push({ tasks: JSON.parse(JSON.stringify(tasks)), message });
+    if (undoStack.current.length > 20) undoStack.current.shift();
+  };
+
+  const doUndo = () => {
+    const entry = undoStack.current.pop();
+    if (entry) { setTasks(entry.tasks); saveTasks(entry.tasks); }
+    setUndoToast(null);
+  };
+
+  const logActivity = (action, taskName, details) => {
+    setActivity(prev => {
+      const next = [...prev, { action, taskName, details, timestamp: new Date().toISOString() }];
+      return next;
+    });
+  };
 
   // Greek calendar info for header
   const currentGreek = useMemo(() => {
@@ -1017,6 +1086,7 @@ export default function ForgeApp() {
     const saved = loadTasks();
     setTasks(saved && saved.length > 0 ? saved : SEED_TASKS);
     setHistory(loadHistory() || []);
+    setActivity(loadActivity());
     setLoaded(true);
   }, []);
 
@@ -1024,6 +1094,7 @@ export default function ForgeApp() {
   const debouncedSave = useDebounce(save, 500);
   useEffect(() => { if (loaded) debouncedSave(tasks); }, [tasks, loaded]);
   useEffect(() => { if (loaded && history.length > 0) saveHistory(history); }, [history, loaded]);
+  useEffect(() => { if (loaded && activity.length > 0) saveActivity(activity); }, [activity, loaded]);
 
   const sections = useMemo(() => [...new Set(tasks.map(t => t.section).filter(Boolean))].sort(), [tasks]);
   const exportMd = useMemo(() => generateObsidianExport(tasks), [tasks]);
@@ -1033,6 +1104,11 @@ export default function ForgeApp() {
       const target = prev.find(t => t.id === id);
       if (!target) return prev;
       if (!target.completed && isBlocked(target, prev)) return prev;
+
+      // Push undo before mutating
+      undoStack.current.push({ tasks: JSON.parse(JSON.stringify(prev)), message: `Toggle: ${target.name}` });
+      if (undoStack.current.length > 20) undoStack.current.shift();
+
       const nowCompleting = !target.completed;
       let next = prev.map(t => t.id !== id ? t : {
         ...t, completed: nowCompleting,
@@ -1057,14 +1133,43 @@ export default function ForgeApp() {
           next = [...next, { ...target, id: uid(), completed: false, completedDate: null, status: "todo", due: nextDue, start: nextStart }];
         }
       }
+
+      // Show undo toast
+      setTimeout(() => setUndoToast({ message: nowCompleting ? `✓ Completed: ${target.name}` : `↩ Uncompleted: ${target.name}` }), 0);
+
       return next;
     });
     setHistory(prev => [...prev, { taskId: id, date: todayStr(), action: "completed" }]);
+    setActivity(prev => {
+      const t = tasks.find(x => x.id === id) || { name: "?" };
+      return [...prev, { action: "completed", taskName: t.name, timestamp: new Date().toISOString() }];
+    });
+  }, [tasks]);
+
+  const updateTask = useCallback((id, u) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...u } : t));
   }, []);
 
-  const updateTask = useCallback((id, u) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...u } : t)), []);
-  const deleteTask = useCallback((id) => { setTasks(prev => prev.filter(t => t.id !== id && t.parentId !== id).map(t => ({ ...t, blockedBy: (t.blockedBy || []).filter(bid => bid !== id) }))); setSelectedId(null); }, []);
-  const addTask = useCallback((t) => setTasks(prev => [...prev, t]), []);
+  const deleteTask = useCallback((id) => {
+    setTasks(prev => {
+      const target = prev.find(t => t.id === id);
+      // Push undo before deleting
+      undoStack.current.push({ tasks: JSON.parse(JSON.stringify(prev)), message: `Delete: ${target?.name}` });
+      if (undoStack.current.length > 20) undoStack.current.shift();
+      setTimeout(() => setUndoToast({ message: `🗑 Deleted: ${target?.name || "task"}` }), 0);
+      return prev.filter(t => t.id !== id && t.parentId !== id).map(t => ({ ...t, blockedBy: (t.blockedBy || []).filter(bid => bid !== id) }));
+    });
+    setSelectedId(null);
+    setActivity(prev => {
+      const t = tasks.find(x => x.id === id) || { name: "?" };
+      return [...prev, { action: "deleted", taskName: t.name, timestamp: new Date().toISOString() }];
+    });
+  }, [tasks]);
+
+  const addTask = useCallback((t) => {
+    setTasks(prev => [...prev, t]);
+    setActivity(prev => [...prev, { action: "created", taskName: t.name, timestamp: new Date().toISOString() }]);
+  }, []);
   const addChild = useCallback((parentId) => {
     const name = prompt("Subtask name:");
     if (!name?.trim()) return;
@@ -1082,6 +1187,8 @@ export default function ForgeApp() {
     setTasks(prev => {
       const target = prev.find(t => t.id === id);
       if (s === "done" && target && isBlocked(target, prev)) return prev;
+      undoStack.current.push({ tasks: JSON.parse(JSON.stringify(prev)), message: `Status: ${target?.name}` });
+      if (undoStack.current.length > 20) undoStack.current.shift();
       return prev.map(t => t.id !== id ? t : {
         ...t, status: s, completed: s === "done",
         completedDate: s === "done" ? todayStr() : null,
@@ -1098,6 +1205,7 @@ export default function ForgeApp() {
         const data = await importJSON(e.target.files[0]);
         if (data.tasks) { setTasks(data.tasks); saveTasks(data.tasks); }
         if (data.history) { setHistory(data.history); saveHistory(data.history); }
+        if (data.activity) { setActivity(data.activity); saveActivity(data.activity); }
         alert("Import successful!");
       } catch (err) { alert("Import failed: " + err.message); }
     };
@@ -1119,13 +1227,25 @@ export default function ForgeApp() {
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
       const aB = isBlocked(a, tasks), bB = isBlocked(b, tasks);
       if (aB !== bB) return aB ? 1 : -1;
+      // User-selected sort
+      if (sortBy === "due") {
+        if (a.due && b.due) return a.due.localeCompare(b.due);
+        if (a.due) return -1; if (b.due) return 1; return 0;
+      }
+      if (sortBy === "priority") {
+        const p = { High: 0, Mid: 1, Low: 2 };
+        return (p[a.priority] || 2) - (p[b.priority] || 2);
+      }
+      if (sortBy === "goal") return (a.goal || "").localeCompare(b.goal || "");
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      // Default: priority then due
       const p = { High: 0, Mid: 1, Low: 2 };
       if ((p[a.priority] || 2) !== (p[b.priority] || 2)) return (p[a.priority] || 2) - (p[b.priority] || 2);
       if (a.due && b.due) return a.due.localeCompare(b.due);
       if (a.due) return -1; if (b.due) return 1;
       return 0;
     });
-  }, [tasks, showCompleted, filterGoal, filterMonth, filterPriority, filterLevel, filterSection, search]);
+  }, [tasks, showCompleted, filterGoal, filterMonth, filterPriority, filterLevel, filterSection, search, sortBy]);
 
   const selectedTask = tasks.find(t => t.id === selectedId);
 
@@ -1152,15 +1272,15 @@ export default function ForgeApp() {
           if (isMobile) {
             const items = ["export JSON", "import JSON", "obsidian export", "reset seed data"];
             const choice = prompt("Options:\n1) export\n2) import\n3) obsidian export\n4) reset\n\nType number:");
-            if (choice === "1") exportJSON(tasks, history);
+            if (choice === "1") exportJSON(tasks, history, activity);
             else if (choice === "2") handleImport();
             else if (choice === "3") setShowExport(true);
-            else if (choice === "4") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); } }
+            else if (choice === "4") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); } }
           } else {
             const action = prompt("Type 'export' to backup JSON, 'import' to restore, or 'reset' to reload seed data:");
-            if (action === "export") exportJSON(tasks, history);
+            if (action === "export") exportJSON(tasks, history, activity);
             else if (action === "import") handleImport();
-            else if (action === "reset") { if (confirm("Reset all tasks to seed data? This cannot be undone.")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); } }
+            else if (action === "reset") { if (confirm("Reset all tasks to seed data? This cannot be undone.")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); } }
           }
         }} style={isMobile ? { padding: "5px 8px" } : {}}>⚙</Btn>
         <button onClick={() => setShowNewTask(true)} style={{
@@ -1201,9 +1321,16 @@ export default function ForgeApp() {
                     <option value="all">All Levels</option>
                     {Object.entries(LEVELS).map(([k, v]) => <option key={k} value={k}>L{k}</option>)}
                   </select>
-                  <select value={filterSection} onChange={e => setFilterSection(e.target.value)} style={{ ...selectStyle, fontSize: 11, padding: "4px 6px", gridColumn: "1 / -1" }}>
+                  <select value={filterSection} onChange={e => setFilterSection(e.target.value)} style={{ ...selectStyle, fontSize: 11, padding: "4px 6px" }}>
                     <option value="all">All Sections</option>
                     {sections.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ ...selectStyle, fontSize: 11, padding: "4px 6px" }}>
+                    <option value="default">Sort: Default</option>
+                    <option value="due">Due Date</option>
+                    <option value="priority">Priority</option>
+                    <option value="goal">Goal</option>
+                    <option value="name">Name</option>
                   </select>
                 </div>
               )}
@@ -1232,6 +1359,13 @@ export default function ForgeApp() {
                 {sections.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
               <Btn active={showCompleted} onClick={() => setShowCompleted(!showCompleted)}>Show Done</Btn>
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ ...selectStyle, width: "auto" }}>
+                <option value="default">Sort: Default</option>
+                <option value="due">Sort: Due Date</option>
+                <option value="priority">Sort: Priority</option>
+                <option value="goal">Sort: Goal</option>
+                <option value="name">Sort: Name</option>
+              </select>
             </div>
           )}
         </div>
@@ -1273,7 +1407,7 @@ export default function ForgeApp() {
               onSelect={setSelectedId} selectedId={selectedId} />
           )}
 
-          {view === "dashboard" && <Dashboard tasks={tasks} history={history} isMobile={isMobile} />}
+          {view === "dashboard" && <Dashboard tasks={tasks} history={history} isMobile={isMobile} activity={activity} />}
         </div>
 
         {selectedTask && !isMobile && (
@@ -1291,6 +1425,9 @@ export default function ForgeApp() {
       {showNewTask && <NewTaskModal sections={sections} onAdd={addTask} onClose={() => setShowNewTask(false)} currentMonth={filterMonth !== "all" ? filterMonth : getGreekMonth()} />}
       {showExport && <ExportModal markdown={exportMd} onClose={() => setShowExport(false)} />}
       {showAI && <><div onClick={() => setShowAI(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", zIndex: 99 }} /><AIPanel tasks={tasks} history={history} onClose={() => setShowAI(false)} isMobile={isMobile} /></>}
+
+      {/* Undo Toast */}
+      {undoToast && <UndoToast message={undoToast.message} onUndo={doUndo} onDismiss={() => setUndoToast(null)} />}
     </div>
   );
 }
