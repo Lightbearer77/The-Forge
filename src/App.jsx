@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek } from "./constants.js";
+import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek, getWeekBounds } from "./constants.js";
 import { loadTasks, saveTasks, loadHistory, saveHistory, exportJSON, importJSON } from "./storage.js";
 import { SEED_TASKS } from "./seed.js";
 
 // ═══════════════════════════════════════════
-// THE FORGE v5.1 — Mobile · PWA · Greek Cal
+// THE FORGE v5.2 — Rebellion Block · Touch Kanban
 // Dependencies · AI Panel · Recurring Tasks
 // Obsidian Export · Completion History
 // ═══════════════════════════════════════════
@@ -393,39 +393,60 @@ const NewTaskModal = ({ sections, onAdd, onClose, currentMonth }) => {
   );
 };
 
-// ─── Kanban Column ───
-const KanbanCol = ({ status, tasks, allTasks, onDrop, onToggle, onSelect, selectedId }) => {
+// ─── Kanban Column (touch-aware) ───
+const KanbanCol = ({ status, tasks, allTasks, onDrop, onToggle, onSelect, selectedId, isMobile, movingId, onStartMove }) => {
   const col = STATUS_META[status];
   const [dragOver, setDragOver] = useState(false);
 
+  // On mobile, tapping a column header while a task is "moving" drops it here
+  const handleColTap = () => {
+    if (isMobile && movingId) onDrop(movingId, status);
+  };
+
   return (
-    <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
-      onDrop={e => { e.preventDefault(); setDragOver(false); const id = e.dataTransfer.getData("text/plain"); if (id) onDrop(id, status); }}
+    <div onDragOver={!isMobile ? (e => { e.preventDefault(); setDragOver(true); }) : undefined}
+      onDragLeave={!isMobile ? (() => setDragOver(false)) : undefined}
+      onDrop={!isMobile ? (e => { e.preventDefault(); setDragOver(false); const id = e.dataTransfer.getData("text/plain"); if (id) onDrop(id, status); }) : undefined}
       style={{
-        flex: 1, minWidth: 220, background: dragOver ? "rgba(201,168,76,0.06)" : "rgba(255,255,255,0.02)",
+        flex: isMobile ? "0 0 75vw" : 1, minWidth: isMobile ? "75vw" : 220,
+        background: (dragOver || (isMobile && movingId)) ? "rgba(201,168,76,0.06)" : "rgba(255,255,255,0.02)",
         borderRadius: 8, padding: 10, display: "flex", flexDirection: "column", gap: 6,
-        border: dragOver ? "1px dashed rgba(201,168,76,0.3)" : "1px solid rgba(255,255,255,0.05)", transition: "all 0.15s",
+        border: dragOver ? "1px dashed rgba(201,168,76,0.3)" : (isMobile && movingId) ? "1px dashed rgba(201,168,76,0.15)" : "1px solid rgba(255,255,255,0.05)",
+        transition: "all 0.15s",
       }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+      <div onClick={handleColTap} style={{
+        display: "flex", alignItems: "center", gap: 6, marginBottom: 4,
+        cursor: isMobile && movingId ? "pointer" : "default",
+        padding: isMobile && movingId ? "6px 8px" : 0,
+        background: isMobile && movingId ? "rgba(201,168,76,0.1)" : "transparent",
+        borderRadius: 6,
+      }}>
         <span style={{ color: col.color, fontSize: 14 }}>{col.icon}</span>
         <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{col.name}</span>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginLeft: "auto" }}>{tasks.length}</span>
+        {isMobile && movingId && <span style={{ fontSize: 10, color: "#C9A84C", marginLeft: "auto" }}>tap to drop</span>}
+        {!movingId && <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginLeft: "auto" }}>{tasks.length}</span>}
       </div>
       {tasks.map(task => {
         const g = GOALS[task.goal];
         const bk = isBlocked(task, allTasks);
+        const isMoving = movingId === task.id;
         return (
-          <div key={task.id} draggable={!bk}
-            onDragStart={e => { if (bk) { e.preventDefault(); return; } e.dataTransfer.setData("text/plain", task.id); e.dataTransfer.effectAllowed = "move"; }}
-            onClick={() => onSelect(task.id)}
+          <div key={task.id} draggable={!isMobile && !bk}
+            onDragStart={!isMobile ? (e => { if (bk) { e.preventDefault(); return; } e.dataTransfer.setData("text/plain", task.id); e.dataTransfer.effectAllowed = "move"; }) : undefined}
+            onClick={() => {
+              if (isMobile && !movingId && !bk) onStartMove(task.id);
+              else if (isMobile && isMoving) onStartMove(null); // cancel
+              else onSelect(task.id);
+            }}
             style={{
               padding: "8px 10px", borderRadius: 6,
-              background: selectedId === task.id ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)",
-              borderLeft: `3px solid ${g?.color || "#555"}`, cursor: bk ? "not-allowed" : "grab",
+              background: isMoving ? "rgba(201,168,76,0.2)" : selectedId === task.id ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.04)",
+              borderLeft: `3px solid ${g?.color || "#555"}`, cursor: bk ? "not-allowed" : isMobile ? "pointer" : "grab",
               opacity: task.completed ? 0.45 : bk ? 0.5 : 1, userSelect: "none",
+              outline: isMoving ? "2px solid rgba(201,168,76,0.5)" : "none",
             }}>
             <div style={{ fontSize: 12, fontWeight: task.milestone ? 700 : 400, color: task.milestone ? "#C9A84C" : "#e5e5e5", marginBottom: 4 }}>
-              {bk ? "🔒 " : ""}{task.milestone ? "🏴 " : ""}{task.name}
+              {bk ? "🔒 " : ""}{task.milestone ? "🏴 " : ""}{isMoving ? "✋ " : ""}{task.name}
             </div>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
               <Pill bg={`${g?.color}22`} color={g?.color}>{task.goal}</Pill>
@@ -524,8 +545,77 @@ const Dashboard = ({ tasks, history, isMobile }) => {
   }
   const maxCount = Math.max(...historyDays.map(h => h.count), 1);
 
+  // ─── Rebellion Block Calculation ───
+  const weekBounds = getWeekBounds();
+  const weekTasks = active.filter(t => {
+    if (t.priority === "Low") return false;
+    if (!t.due) return false;
+    return t.due >= weekBounds.start && t.due <= weekBounds.end;
+  });
+  const weekDone = weekTasks.filter(t => t.completed).length;
+  const weekTotal = weekTasks.length;
+  const rebellionPct = weekTotal > 0 ? Math.round((weekDone / weekTotal) * 100) : 0;
+  const rebellionUnlocked = rebellionPct >= 90;
+  const rebellionColor = rebellionUnlocked ? "#C9A84C" : rebellionPct >= 70 ? "#D4A84B" : "#E8453C";
+
   return (
     <div>
+      {/* Rebellion Block */}
+      <div style={{
+        background: rebellionUnlocked ? "rgba(201,168,76,0.08)" : "rgba(232,69,60,0.06)",
+        border: `1px solid ${rebellionUnlocked ? "rgba(201,168,76,0.3)" : "rgba(232,69,60,0.2)"}`,
+        borderRadius: 10, padding: isMobile ? 14 : 18, marginBottom: 20,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: rebellionColor, letterSpacing: 0.5 }}>
+              {rebellionUnlocked ? "⚡ REBELLION BLOCK UNLOCKED" : "🔥 DUTY RESET ACTIVE"}
+            </div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>
+              {rebellionUnlocked
+                ? "90%+ achieved — 4 hours unstructured time earned"
+                : "Below 90% — 2hr focused duty + Stoicism Journal before leisure"}
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 32, fontWeight: 800, color: rebellionColor, lineHeight: 1 }}>{rebellionPct}%</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>{weekDone}/{weekTotal} High+Mid</div>
+          </div>
+        </div>
+        <div style={{ height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 4, position: "relative", overflow: "hidden" }}>
+          <div style={{
+            height: "100%", borderRadius: 4, transition: "width 0.5s ease",
+            width: `${rebellionPct}%`,
+            background: rebellionUnlocked
+              ? "linear-gradient(90deg, #C9A84C, #D4A84B)"
+              : `linear-gradient(90deg, ${rebellionColor}, ${rebellionColor}88)`,
+          }} />
+          <div style={{ position: "absolute", top: -2, bottom: -2, left: "90%", width: 2, background: "rgba(255,255,255,0.3)" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)" }}>W{getGreekWeek()} · {weekBounds.start.slice(5)} → {weekBounds.end.slice(5)}</span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)" }}>90% threshold</span>
+        </div>
+        {weekTasks.filter(t => !t.completed).length > 0 && (
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+              Remaining this week ({weekTasks.filter(t => !t.completed).length})
+            </div>
+            {weekTasks.filter(t => !t.completed).slice(0, 6).map(t => (
+              <div key={t.id} style={{ fontSize: 11, padding: "3px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: GOALS[t.goal]?.color, fontSize: 10 }}>{GOALS[t.goal]?.icon}</span>
+                <span style={{ color: "#e5e5e5", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+                <Pill bg={`${PRIORITIES[t.priority]}22`} color={PRIORITIES[t.priority]}>{t.priority}</Pill>
+              </div>
+            ))}
+            {weekTasks.filter(t => !t.completed).length > 6 && (
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>+{weekTasks.filter(t => !t.completed).length - 6} more</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)", gap: isMobile ? 8 : 12, marginBottom: 20 }}>
         {[
           { label: "Total", value: total, color: "#C9A84C" },
@@ -781,6 +871,7 @@ export default function ForgeApp() {
   const [showExport, setShowExport] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [movingId, setMovingId] = useState(null); // touch kanban
 
   // Greek calendar info for header
   const currentGreek = useMemo(() => {
@@ -864,6 +955,7 @@ export default function ForgeApp() {
         completedDate: s === "done" ? todayStr() : null,
       });
     });
+    setMovingId(null);
   }, []);
 
   const handleImport = async () => {
@@ -1035,11 +1127,20 @@ export default function ForgeApp() {
           )}
 
           {view === "kanban" && (
-            <div style={{ display: "flex", gap: 12, minHeight: "100%", overflowX: isMobile ? "auto" : "visible", paddingBottom: isMobile ? 12 : 0 }}>
-              {STATUS_KEYS.map(s => (
-                <KanbanCol key={s} status={s} tasks={filtered.filter(t => t.status === s)} allTasks={tasks}
-                  onDrop={changeStatus} onToggle={toggleComplete} onSelect={setSelectedId} selectedId={selectedId} />
-              ))}
+            <div>
+              {isMobile && movingId && (
+                <div style={{ padding: "8px 12px", marginBottom: 8, background: "rgba(201,168,76,0.1)", borderRadius: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: "#C9A84C" }}>✋ Tap a column header to move task</span>
+                  <button onClick={() => setMovingId(null)} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4, border: "none", background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", cursor: "pointer" }}>Cancel</button>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 12, minHeight: "100%", overflowX: isMobile ? "auto" : "visible", paddingBottom: isMobile ? 12 : 0, scrollSnapType: isMobile ? "x mandatory" : "none" }}>
+                {STATUS_KEYS.map(s => (
+                  <KanbanCol key={s} status={s} tasks={filtered.filter(t => t.status === s)} allTasks={tasks}
+                    onDrop={changeStatus} onToggle={toggleComplete} onSelect={setSelectedId} selectedId={selectedId}
+                    isMobile={isMobile} movingId={movingId} onStartMove={setMovingId} />
+                ))}
+              </div>
             </div>
           )}
 

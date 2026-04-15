@@ -67,6 +67,21 @@ export const getGreekWeek = (date = new Date()) => {
   return Math.ceil((days + jan1.getDay() + 1) / 7);
 };
 
+// Week boundaries (Mon-Sun) for Rebellion Block calculation
+export const getWeekBounds = (date = new Date()) => {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun
+  const diffToMon = day === 0 ? -6 : 1 - day;
+  const mon = new Date(d);
+  mon.setDate(d.getDate() + diffToMon);
+  mon.setHours(0, 0, 0, 0);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23, 59, 59, 999);
+  const fmt = (dt) => dt.toISOString().split("T")[0];
+  return { start: fmt(mon), end: fmt(sun) };
+};
+
 export const selectStyle = {
   fontSize: 13, padding: "6px 10px", borderRadius: 5,
   border: "1px solid rgba(255,255,255,0.1)",
