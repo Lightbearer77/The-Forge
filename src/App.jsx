@@ -4,7 +4,7 @@ import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActiv
 import { SEED_TASKS } from "./seed.js";
 
 // ═══════════════════════════════════════════
-// THE FORGE v5.5 — Batch · Sync · Timeline
+// THE FORGE v5.5 — Batch · Sync · Timeline · MPL Import
 // Dependencies · AI Panel · Recurring Tasks
 // Obsidian Export · Completion History
 // ═══════════════════════════════════════════
@@ -632,6 +632,157 @@ const GroupedListView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMo
   );
 };
 
+// ─── MPL Markdown Parser ───
+const parseMPL = (markdown) => {
+  const lines = markdown.split("\n");
+  const tasks = [];
+  let currentMonth = "";
+  let currentSection = "";
+
+  for (const line of lines) {
+    // Month header: ## April 2026 (#M04)  or  ## May 2026 (#M05)
+    const monthMatch = line.match(/^## .+?\(#(M\d{2})\)/);
+    if (monthMatch) { currentMonth = monthMatch[1]; continue; }
+    // Also catch: ## March 2026 (#M03) or just ## month (#Mxx)
+    const monthMatch2 = line.match(/^## .+#(M\d{2})/);
+    if (monthMatch2 && !monthMatch) { currentMonth = monthMatch2[1]; continue; }
+
+    // Section header: ### Section Name
+    const secMatch = line.match(/^### (.+)/);
+    if (secMatch) { currentSection = secMatch[1].trim(); continue; }
+
+    // Task line: - [ ] or - [x]
+    const taskMatch = line.match(/^- \[([ x])\] (.+)/);
+    if (!taskMatch) continue;
+
+    const completed = taskMatch[1] === "x";
+    let rest = taskMatch[2];
+
+    // Extract due date
+    const dueMatch = rest.match(/`due:: (\d{4}-\d{2}-\d{2})`/);
+    const due = dueMatch ? dueMatch[1] : "";
+
+    // Extract completion date
+    const compMatch = rest.match(/\[completion:: (\d{4}-\d{2}-\d{2})\]/);
+    const completedDate = compMatch ? compMatch[1] : completed ? todayStr() : null;
+
+    // Extract goal
+    const goalMatch = rest.match(/#(G[1-4])/);
+    const goal = goalMatch ? goalMatch[1] : "G1";
+
+    // Extract priority
+    const priMatch = rest.match(/#(High|Mid|Low)/);
+    const priority = priMatch ? priMatch[1] : "Mid";
+
+    // Extract month tag if not set from header
+    const mTagMatch = rest.match(/#(M\d{2})/);
+    const month = currentMonth || (mTagMatch ? mTagMatch[1] : "M04");
+
+    // Extract week
+    const weekMatch = rest.match(/#(W\d+)/);
+    const week = weekMatch ? weekMatch[1] : "";
+
+    // Clean task name: strip everything after first backtick, or after (@, or after #tag sequences
+    let name = rest
+      .replace(/`due:: [^`]+`/, "")
+      .replace(/\(@[^)]+\)/, "")
+      .replace(/\[completion:: [^\]]+\]/, "")
+      .replace(/#Q\d+/g, "").replace(/#M\d+/g, "").replace(/#W\d+/g, "")
+      .replace(/#High|#Mid|#Low/g, "")
+      .replace(/#G[1-4]/g, "")
+      .replace(/\*\([^)]+\)\*/g, "") // *(carried note)*
+      .trim();
+
+    // Extract notes from *(...)* patterns
+    const notesMatch = rest.match(/\*\(([^)]+)\)\*/);
+    const notes = notesMatch ? notesMatch[1] : "";
+
+    if (!name) continue;
+
+    tasks.push({
+      id: uid(), name, goal, priority, level: 1, month, week,
+      start: due ? addDays(due, -2) : "", due,
+      status: completed ? "done" : "todo",
+      section: currentSection, notes,
+      milestone: false, parentId: null,
+      completed, completedDate,
+      blockedBy: [], recurrence: "none",
+    });
+  }
+  return tasks;
+};
+
+// ─── Import MPL Modal ───
+const ImportMPLModal = ({ onImport, onClose }) => {
+  const [text, setText] = useState("");
+  const [preview, setPreview] = useState(null);
+
+  const handlePreview = () => {
+    const parsed = parseMPL(text);
+    setPreview(parsed);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: 10, padding: 24, width: "min(600px, 95vw)", maxHeight: "90vh", display: "flex", flexDirection: "column", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#C9A84C" }}>📥 Import from Obsidian MPL</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>✕</button>
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>
+          Paste your Master Priority List.md content below. The parser reads task lines, sections, goals, priorities, due dates, and completion states.
+        </div>
+        {!preview ? (
+          <>
+            <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Paste Master Priority List.md content here..."
+              style={{ ...inputStyle, flex: 1, minHeight: 250, fontFamily: "monospace", fontSize: 10, resize: "none" }} />
+            <button onClick={handlePreview} disabled={!text.trim()} style={{
+              marginTop: 10, padding: "8px 16px", borderRadius: 6, border: "none",
+              background: text.trim() ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.04)",
+              color: text.trim() ? "#C9A84C" : "rgba(255,255,255,0.2)", cursor: text.trim() ? "pointer" : "not-allowed", fontWeight: 600,
+            }}>Preview Import</button>
+          </>
+        ) : (
+          <>
+            <div style={{ flex: 1, overflowY: "auto", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, color: "#C9A84C", fontWeight: 600, marginBottom: 8 }}>
+                Found {preview.length} tasks ({preview.filter(t => t.completed).length} completed, {preview.filter(t => !t.completed).length} open)
+              </div>
+              <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+                {Object.keys(GOALS).map(g => (
+                  <div key={g} style={{ fontSize: 11 }}>
+                    <span style={{ color: GOALS[g].color }}>{GOALS[g].icon} {g}:</span>
+                    <span style={{ color: "rgba(255,255,255,0.5)", marginLeft: 4 }}>{preview.filter(t => t.goal === g).length}</span>
+                  </div>
+                ))}
+              </div>
+              {preview.slice(0, 20).map((t, i) => (
+                <div key={i} style={{ fontSize: 10, padding: "3px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", gap: 6, alignItems: "center" }}>
+                  <span style={{ color: t.completed ? "#5B8A72" : "rgba(255,255,255,0.3)" }}>{t.completed ? "✓" : "○"}</span>
+                  <span style={{ color: GOALS[t.goal]?.color, flexShrink: 0 }}>{t.goal}</span>
+                  <span style={{ color: "#e5e5e5", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+                  <span style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>{t.section}</span>
+                </div>
+              ))}
+              {preview.length > 20 && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>...and {preview.length - 20} more</div>}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setPreview(null)} style={{
+                flex: 1, padding: "8px", borderRadius: 6, border: "none",
+                background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", cursor: "pointer",
+              }}>← Back</button>
+              <button onClick={() => { onImport(preview); onClose(); }} style={{
+                flex: 2, padding: "8px", borderRadius: 6, border: "none",
+                background: "rgba(201,168,76,0.2)", color: "#C9A84C", cursor: "pointer", fontWeight: 600,
+              }}>Replace All Tasks ({preview.length})</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ─── Batch Action Bar ───
 const BatchBar = ({ count, onComplete, onDelete, onMove, onCancel, isMobile }) => (
   <div style={{
@@ -1234,6 +1385,7 @@ export default function ForgeApp() {
   const [batchMode, setBatchMode] = useState(false);
   const [batchIds, setBatchIds] = useState(new Set());
   const [showSync, setShowSync] = useState(false);
+  const [showImportMPL, setShowImportMPL] = useState(false);
   const undoStack = useRef([]);
   const [undoToast, setUndoToast] = useState(null); // { message, snapshot }
 
@@ -1455,16 +1607,18 @@ export default function ForgeApp() {
         {!isMobile && <Btn onClick={() => setShowExport(true)}>📋 Export</Btn>}
         <Btn onClick={() => {
           if (isMobile) {
-            const items = ["export JSON", "import JSON", "obsidian export", "reset seed data"];
-            const choice = prompt("Options:\n1) export\n2) import\n3) obsidian export\n4) reset\n\nType number:");
+            const items = ["export JSON", "import JSON", "obsidian export", "import MPL", "reset seed data"];
+            const choice = prompt("Options:\n1) export\n2) import\n3) obsidian export\n4) import MPL\n5) reset\n\nType number:");
             if (choice === "1") exportJSON(tasks, history, activity);
             else if (choice === "2") handleImport();
             else if (choice === "3") setShowExport(true);
-            else if (choice === "4") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); } }
+            else if (choice === "4") setShowImportMPL(true);
+            else if (choice === "5") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); } }
           } else {
-            const action = prompt("Type 'export' to backup JSON, 'import' to restore, or 'reset' to reload seed data:");
+            const action = prompt("Type 'export', 'import', 'mpl' (import MPL), or 'reset':");
             if (action === "export") exportJSON(tasks, history, activity);
             else if (action === "import") handleImport();
+            else if (action === "mpl") setShowImportMPL(true);
             else if (action === "reset") { if (confirm("Reset all tasks to seed data? This cannot be undone.")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); } }
           }
         }} style={isMobile ? { padding: "5px 8px" } : {}}>⚙</Btn>
@@ -1652,6 +1806,16 @@ export default function ForgeApp() {
           if (data.activity) { setActivity(data.activity); saveActivity(data.activity); }
         }}
         onClose={() => setShowSync(false)} />}
+
+      {/* Import MPL Modal */}
+      {showImportMPL && <ImportMPLModal
+        onImport={(parsed) => {
+          undoStack.current.push({ tasks: JSON.parse(JSON.stringify(tasks)), message: `Import MPL (${parsed.length} tasks)` });
+          setTasks(parsed); saveTasks(parsed);
+          setUndoToast({ message: `📥 Imported ${parsed.length} tasks from MPL` });
+          setActivity(prev => [...prev, { action: "created", taskName: `MPL import (${parsed.length} tasks)`, timestamp: new Date().toISOString() }]);
+        }}
+        onClose={() => setShowImportMPL(false)} />}
 
       {/* Undo Toast */}
       {undoToast && <UndoToast message={undoToast.message} onUndo={doUndo} onDismiss={() => setUndoToast(null)} />}
