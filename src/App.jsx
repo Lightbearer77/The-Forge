@@ -4,7 +4,7 @@ import { loadTasks, saveTasks, loadHistory, saveHistory, exportJSON, importJSON 
 import { SEED_TASKS } from "./seed.js";
 
 // ═══════════════════════════════════════════
-// THE FORGE v5.2 — Rebellion Block · Touch Kanban
+// THE FORGE v5.3 — Week Focus · Overdue · Sections
 // Dependencies · AI Panel · Recurring Tasks
 // Obsidian Export · Completion History
 // ═══════════════════════════════════════════
@@ -456,6 +456,138 @@ const KanbanCol = ({ status, tasks, allTasks, onDrop, onToggle, onSelect, select
           </div>
         );
       })}
+    </div>
+  );
+};
+
+// ─── Week Focus View ───
+const WeekFocusView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMobile }) => {
+  const today = todayStr();
+  const tomorrow = addDays(today, 1);
+  const weekEnd = (() => { const d = new Date(); const day = d.getDay(); const diff = day === 0 ? 0 : 7 - day; const end = new Date(d); end.setDate(d.getDate() + diff); return end.toISOString().split("T")[0]; })();
+
+  const active = tasks.filter(t => !t.parentId && !t.completed);
+  const overdue = active.filter(t => t.due && t.due < today);
+  const todayTasks = active.filter(t => t.due === today);
+  const tomorrowTasks = active.filter(t => t.due === tomorrow);
+  const restOfWeek = active.filter(t => t.due > tomorrow && t.due <= weekEnd);
+  const noDue = active.filter(t => !t.due).slice(0, 5);
+
+  const sections = [
+    { key: "overdue", title: "⚠️ OVERDUE", tasks: overdue, color: "#E8453C", bg: "rgba(232,69,60,0.06)", border: "rgba(232,69,60,0.15)" },
+    { key: "today", title: "📌 TODAY", tasks: todayTasks, color: "#C9A84C", bg: "rgba(201,168,76,0.06)", border: "rgba(201,168,76,0.15)" },
+    { key: "tomorrow", title: "→ TOMORROW", tasks: tomorrowTasks, color: "#D4A84B", bg: "transparent", border: "rgba(255,255,255,0.06)" },
+    { key: "week", title: "THIS WEEK", tasks: restOfWeek, color: "rgba(255,255,255,0.5)", bg: "transparent", border: "rgba(255,255,255,0.06)" },
+  ];
+
+  const renderRow = (task) => {
+    const children = allTasks.filter(t => t.parentId === task.id);
+    const bk = isBlocked(task, allTasks);
+    const bNames = bk ? getBlockers(task, allTasks).filter(b => !b.completed).map(b => b.name).join(", ") : "";
+    return <TaskRow key={task.id} task={task} onToggle={onToggle} onSelect={onSelect}
+      selected={selectedId === task.id} childCount={children.length} childDone={children.filter(c => c.completed).length}
+      blocked={bk} blockerNames={bNames} allTasks={allTasks} />;
+  };
+
+  return (
+    <div style={{ padding: isMobile ? 10 : 20 }}>
+      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 12 }}>
+        W{getGreekWeek()} · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+      </div>
+      {sections.map(s => s.tasks.length > 0 && (
+        <div key={s.key} style={{ marginBottom: 16, borderRadius: 8, overflow: "hidden", background: s.bg, border: `1px solid ${s.border}` }}>
+          <div style={{ padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: s.color, letterSpacing: 1 }}>{s.title}</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{s.tasks.length}</span>
+          </div>
+          {s.tasks.sort((a, b) => {
+            const p = { High: 0, Mid: 1, Low: 2 };
+            return (p[a.priority] || 2) - (p[b.priority] || 2);
+          }).map(renderRow)}
+        </div>
+      ))}
+      {noDue.length > 0 && (
+        <div style={{ marginBottom: 16, borderRadius: 8, overflow: "hidden", border: "1px solid rgba(255,255,255,0.04)" }}>
+          <div style={{ padding: "8px 12px" }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.3)", letterSpacing: 1 }}>NO DUE DATE</span>
+          </div>
+          {noDue.map(renderRow)}
+        </div>
+      )}
+      {overdue.length === 0 && todayTasks.length === 0 && tomorrowTasks.length === 0 && restOfWeek.length === 0 && (
+        <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.3)" }}>No tasks due this week</div>
+      )}
+    </div>
+  );
+};
+
+// ─── Grouped List View ───
+const GroupedListView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMobile }) => {
+  const overdue = tasks.filter(t => !t.completed && t.due && t.due < todayStr());
+  const [overdueOpen, setOverdueOpen] = useState(true);
+  const [collapsedSections, setCollapsedSections] = useState({});
+
+  const toggleSection = (s) => setCollapsedSections(prev => ({ ...prev, [s]: !prev[s] }));
+
+  // Group by section
+  const grouped = {};
+  tasks.forEach(t => {
+    const s = t.section || "Unsorted";
+    if (!grouped[s]) grouped[s] = [];
+    grouped[s].push(t);
+  });
+  const sectionNames = Object.keys(grouped).sort();
+
+  const renderRow = (task) => {
+    const children = allTasks.filter(t => t.parentId === task.id);
+    const bk = isBlocked(task, allTasks);
+    const bNames = bk ? getBlockers(task, allTasks).filter(b => !b.completed).map(b => b.name).join(", ") : "";
+    return <TaskRow key={task.id} task={task} onToggle={onToggle} onSelect={onSelect}
+      selected={selectedId === task.id} childCount={children.length} childDone={children.filter(c => c.completed).length}
+      blocked={bk} blockerNames={bNames} allTasks={allTasks} />;
+  };
+
+  return (
+    <div>
+      {/* Overdue Banner */}
+      {overdue.length > 0 && (
+        <div style={{ background: "rgba(232,69,60,0.08)", borderBottom: "1px solid rgba(232,69,60,0.2)" }}>
+          <div onClick={() => setOverdueOpen(!overdueOpen)} style={{
+            padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer",
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#E8453C" }}>⚠️ {overdue.length} OVERDUE</span>
+            <span style={{ fontSize: 12, color: "#E8453C" }}>{overdueOpen ? "▾" : "▸"}</span>
+          </div>
+          {overdueOpen && overdue.map(renderRow)}
+        </div>
+      )}
+
+      {/* Sections */}
+      {sectionNames.map(sec => {
+        const secTasks = grouped[sec];
+        const collapsed = collapsedSections[sec];
+        const doneCount = secTasks.filter(t => t.completed).length;
+        return (
+          <div key={sec}>
+            <div onClick={() => toggleSection(sec)} style={{
+              padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center",
+              background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.06)",
+              cursor: "pointer", position: "sticky", top: 0, zIndex: 5,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{collapsed ? "▸" : "▾"}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{sec}</span>
+              </div>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{doneCount}/{secTasks.length}</span>
+            </div>
+            {!collapsed && secTasks.map(renderRow)}
+          </div>
+        );
+      })}
+
+      {tasks.length === 0 && (
+        <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.3)" }}>No tasks match filters</div>
+      )}
     </div>
   );
 };
@@ -1007,6 +1139,7 @@ export default function ForgeApp() {
         <div style={{ display: "flex", gap: isMobile ? 2 : 4 }}>
           {[
             { key: "list", icon: "☰", label: "List" },
+            { key: "week", icon: "📌", label: "Week" },
             { key: "kanban", icon: "▦", label: "Kanban" },
             { key: "calendar", icon: "📅", label: "Cal" },
             { key: "dashboard", icon: "◧", label: "Dash" },
@@ -1037,7 +1170,7 @@ export default function ForgeApp() {
       </div>
 
       {/* Filters */}
-      {view !== "dashboard" && (
+      {view !== "dashboard" && view !== "week" && (
         <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
           {isMobile ? (
             <>
@@ -1106,24 +1239,15 @@ export default function ForgeApp() {
 
       {/* Content */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <div style={{ flex: 1, overflowY: "auto", padding: view === "list" ? 0 : isMobile ? 10 : 20 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: (view === "list") ? 0 : (view === "week") ? 0 : isMobile ? 10 : 20 }}>
           {view === "list" && (
-            <div>
-              {filtered.length === 0 ? (
-                <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.3)" }}>No tasks match filters</div>
-              ) : (
-                filtered.map(task => {
-                  const children = tasks.filter(t => t.parentId === task.id);
-                  const bk = isBlocked(task, tasks);
-                  const bNames = bk ? getBlockers(task, tasks).filter(b => !b.completed).map(b => b.name).join(", ") : "";
-                  return (
-                    <TaskRow key={task.id} task={task} onToggle={toggleComplete} onSelect={setSelectedId}
-                      selected={selectedId === task.id} childCount={children.length} childDone={children.filter(c => c.completed).length}
-                      blocked={bk} blockerNames={bNames} allTasks={tasks} />
-                  );
-                })
-              )}
-            </div>
+            <GroupedListView tasks={filtered} allTasks={tasks} onToggle={toggleComplete}
+              onSelect={setSelectedId} selectedId={selectedId} isMobile={isMobile} />
+          )}
+
+          {view === "week" && (
+            <WeekFocusView tasks={tasks} allTasks={tasks} onToggle={toggleComplete}
+              onSelect={setSelectedId} selectedId={selectedId} isMobile={isMobile} />
           )}
 
           {view === "kanban" && (
