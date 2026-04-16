@@ -52,6 +52,14 @@ export const SEED_TASKS = [
   t({ id:"a36", name:"Research and join one intentional dating platform or community", goal:"G2", priority:"High", level:3, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe" }),
   t({ id:"a37", name:"Continue Phase 1 stealth incentives at next meetup + score readiness checklist", goal:"G2", priority:"High", level:3, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Longhouse & Tribe" }),
 
+  // ═══ APRIL — Hinge Setup (sub-tasks of a36) ═══
+  t({ id:"a38", name:"Download Hinge and create account", goal:"G2", priority:"High", level:1, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", notes:"Platform selected based on Utah pool density and values-signal prompts" }),
+  t({ id:"a39", name:"Write profile prompt #1 — signal you are building something, not just existing", goal:"G2", priority:"High", level:2, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
+  t({ id:"a40", name:"Write profile prompt #2 — show physical standards and discipline", goal:"G2", priority:"High", level:2, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
+  t({ id:"a41", name:"Write profile prompt #3 — hint at legacy and family orientation without spelling it out", goal:"G2", priority:"High", level:2, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
+  t({ id:"a42", name:"Set daily rule: 10 minutes maximum per session — passive mode only", goal:"G2", priority:"Mid", level:1, month:"M04", start:"2026-04-25", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a39","a40","a41"], notes:"No premium features. No volume swiping. Screen Tier 1 criteria from profile before any contact." }),
+  t({ id:"a43", name:"First session: review matches, run conquest filter, send one meaningful opener or skip", goal:"G2", priority:"Mid", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a42"], notes:"Conquest filter: frame check, Longhouse man test, net gain test. If any answer is shaky — skip." }),
+
   // ═══ APRIL — Mindset ═══
   t({ id:"a38", name:"Become self-starter / break defeated mindset daily practice", goal:"G1", priority:"High", level:3, month:"M04", start:"2026-04-15", due:"2026-04-25", status:"done", section:"Mindset", completed:true, completedDate:"2026-04-02" }),
   t({ id:"a39", name:"Are you following your Father's counsel?", goal:"G1", priority:"Mid", level:4, month:"M04", start:"2026-04-25", due:"2026-04-28", status:"backlog", section:"Mindset" }),
