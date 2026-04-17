@@ -6,7 +6,15 @@ const t = (o) => ({
 
 export const SEED_TASKS = [
   // ═══ APRIL (#M04) — Q1 Carryovers ═══
-  t({ id:"a01", name:"Switch to Proton", goal:"G1", priority:"Mid", level:1, month:"M04", start:"2026-04-07", due:"2026-04-12", status:"todo", section:"Q1 Carryovers", notes:"Carried from Q1/Gamma" }),
+  // ═══ APRIL — Proton Migration (replaces "Switch to Proton") ═══
+  t({ id:"a01", name:"Define Proton primary vs alias decision criteria", goal:"G1", priority:"High", level:2, month:"M04", start:"2026-04-17", due:"2026-04-19", status:"todo", section:"Digital Sovereignty", notes:"Primary = financial, govt, medical, career, inner circle. Alias = everything else." }),
+  t({ id:"p01", name:"Set up SimpleLogin aliases and confirm routing to Proton inbox", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-17", due:"2026-04-19", status:"todo", section:"Digital Sovereignty", blockedBy:["a01"] }),
+  t({ id:"p02", name:"Audit and export full account list from password manager", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-19", due:"2026-04-21", status:"todo", section:"Digital Sovereignty", notes:"Export from Microsoft/browser password manager.", blockedBy:["a01"] }),
+  t({ id:"p03", name:"Categorize account list: primary vs alias, tag Tier 1", goal:"G1", priority:"High", level:2, month:"M04", start:"2026-04-21", due:"2026-04-22", status:"todo", section:"Digital Sovereignty", blockedBy:["p02"] }),
+  t({ id:"p04", name:"Migrate Tier 1 accounts to Proton primary (financial, govt, medical, career)", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-22", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", blockedBy:["p03"] }),
+  t({ id:"p05", name:"Migrate Tier 2 accounts to SimpleLogin aliases (core services, social)", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-01", due:"2026-05-15", status:"backlog", section:"Digital Sovereignty", blockedBy:["p04"] }),
+  t({ id:"p06", name:"Migrate Tier 3 accounts to SimpleLogin aliases (low-stakes, shopping, misc)", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-15", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", blockedBy:["p05"] }),
+  t({ id:"p07", name:"Confirm Microsoft account fully detached — no Tier 1 accounts remaining", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", blockedBy:["p06"] }),
   t({ id:"a02", name:"Start consistent athletic body training block", goal:"G3", priority:"High", level:1, month:"M04", start:"2026-04-07", due:"2026-04-07", status:"todo", section:"Q1 Carryovers", notes:"CRITICAL: longest-running incomplete task. Carried from Q1/Gamma and MS3. Single highest-leverage task in the system." }),
   t({ id:"a03", name:"Install Perpetual calendar", goal:"G1", priority:"Mid", level:1, month:"M04", start:"2026-04-07", due:"2026-04-07", status:"todo", section:"Q1 Carryovers", notes:"Carried from Q1/Gamma" }),
   t({ id:"a04", name:"Find Father's journal", goal:"G1", priority:"Mid", level:4, month:"M04", start:"2026-04-07", due:"2026-04-07", status:"backlog", section:"Q1 Carryovers", notes:"Carried from Q1/Gamma" }),
