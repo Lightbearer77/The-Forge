@@ -1423,6 +1423,46 @@ export default function ForgeApp() {
     setLoaded(true);
   }, []);
 
+  // One-time Proton migration dependency wiring
+  useEffect(() => {
+    if (!loaded) return;
+    const LINK_KEY = "forge-proton-chain-linked-v1";
+    if (localStorage.getItem(LINK_KEY)) return;
+    const CHAIN = [
+      ["Define Proton primary vs alias decision criteria", ["Set up SimpleLogin aliases", "Audit and export full account list"]],
+      ["Audit and export full account list", ["Categorize account list: primary vs alias"]],
+      ["Categorize account list: primary vs alias", ["Migrate Tier 1 accounts to Proton primary"]],
+      ["Migrate Tier 1 accounts to Proton primary", ["Migrate Tier 2 accounts to SimpleLogin aliases"]],
+      ["Migrate Tier 2 accounts to SimpleLogin aliases", ["Migrate Tier 3 accounts to SimpleLogin aliases"]],
+      ["Migrate Tier 3 accounts to SimpleLogin aliases", ["Confirm Microsoft account fully detached"]],
+    ];
+    setTasks(prev => {
+      const find = (frag) => prev.find(t => t.name.includes(frag));
+      let updated = [...prev];
+      let changed = false;
+      CHAIN.forEach(([blocker, blocked]) => {
+        const b = find(blocker);
+        if (!b) return;
+        blocked.forEach(frag => {
+          const t = find(frag);
+          if (!t) return;
+          if (!(t.blockedBy || []).includes(b.id)) {
+            updated = updated.map(x => x.id === t.id
+              ? { ...x, blockedBy: [...(x.blockedBy || []), b.id] }
+              : x
+            );
+            changed = true;
+          }
+        });
+      });
+      if (changed) {
+        saveTasks(updated);
+        localStorage.setItem(LINK_KEY, "1");
+      }
+      return changed ? updated : prev;
+    });
+  }, [loaded]);
+
   const save = useCallback((t) => saveTasks(t), []);
   const debouncedSave = useDebounce(save, 500);
   useEffect(() => { if (loaded) debouncedSave(tasks); }, [tasks, loaded]);
