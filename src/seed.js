@@ -5,16 +5,69 @@ const t = (o) => ({
 });
 
 export const SEED_TASKS = [
-  // ═══ APRIL (#M04) — Q1 Carryovers ═══
-  // ═══ APRIL — Proton Migration (replaces "Switch to Proton") ═══
-  t({ id:"a01", name:"Define Proton primary vs alias decision criteria", goal:"G1", priority:"High", level:2, month:"M04", start:"2026-04-17", due:"2026-04-19", status:"todo", section:"Digital Sovereignty", notes:"Primary = financial, govt, medical, career, inner circle. Alias = everything else." }),
-  t({ id:"p01", name:"Set up SimpleLogin aliases and confirm routing to Proton inbox", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-17", due:"2026-04-19", status:"todo", section:"Digital Sovereignty", blockedBy:["a01"] }),
-  t({ id:"p02", name:"Audit and export full account list from password manager", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-19", due:"2026-04-21", status:"todo", section:"Digital Sovereignty", notes:"Export from Microsoft/browser password manager.", blockedBy:["a01"] }),
-  t({ id:"p03", name:"Categorize account list: primary vs alias, tag Tier 1", goal:"G1", priority:"High", level:2, month:"M04", start:"2026-04-21", due:"2026-04-22", status:"todo", section:"Digital Sovereignty", blockedBy:["p02"] }),
-  t({ id:"p04", name:"Migrate Tier 1 accounts to Proton primary (financial, govt, medical, career)", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-22", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", blockedBy:["p03"] }),
-  t({ id:"p05", name:"Migrate Tier 2 accounts to SimpleLogin aliases (core services, social)", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-01", due:"2026-05-15", status:"backlog", section:"Digital Sovereignty", blockedBy:["p04"] }),
+  // ═══ APRIL (#M04) — Digital Sovereignty ═══
+  t({ id:"a01", name:"Define Proton primary vs alias decision criteria", goal:"G1", priority:"High", level:2, month:"M04", start:"2026-04-17", due:"2026-04-19", status:"done", section:"Digital Sovereignty", completed:true, completedDate:"2026-04-23", notes:"Architecture locked: @proton.me primary, SimpleLogin alias model for all accounts. Tier list built from KeePass audit." }),
+  t({ id:"p01", name:"Set up SimpleLogin — create account, verify alias domain, test one alias end-to-end", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-23", due:"2026-04-25", status:"todo", section:"Digital Sovereignty", blockedBy:["a01"] }),
+  t({ id:"p02", name:"Audit and export full account list from password manager", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-19", due:"2026-04-21", status:"done", section:"Digital Sovereignty", completed:true, completedDate:"2026-04-23", notes:"KeePass audit completed. ~130+ accounts catalogued across 11 screenshots." }),
+  t({ id:"p03", name:"Categorize account list into Tier 1 / Tier 2 / Tier 3", goal:"G1", priority:"High", level:2, month:"M04", start:"2026-04-21", due:"2026-04-22", status:"done", section:"Digital Sovereignty", completed:true, completedDate:"2026-04-23", notes:"Tier list finalized and saved. T1=identity/financial/medical/work, T2=core services/social/health apps, T3=food/entertainment/misc." }),
+  t({ id:"p04", name:"Migrate Tier 1 accounts to Proton alias (identity, financial, medical, career)", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", blockedBy:["p01","p03"] }),
+
+  // ─── Tier 1: Identity & Email Infrastructure ───
+  t({ id:"t1_01", name:"Migrate: Apple ID", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_02", name:"Migrate: Google (primary)", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_03", name:"Migrate: Google - backup", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_04", name:"Migrate: Outlook", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_05", name:"Migrate: Outlook-Tesla", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_06", name:"Migrate: CSU Global", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_07", name:"Migrate: Id.me", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+
+  // ─── Tier 1: Financial ───
+  t({ id:"t1_08", name:"Migrate: Axos Account / Axos Bank", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_09", name:"Migrate: Chase Bank", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_10", name:"Migrate: Varo Bank", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_11", name:"Migrate: Member's First Credit Union", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_12", name:"Migrate: Zions Bank", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_13", name:"Migrate: Fidelity", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_14", name:"Migrate: PayPal", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_15", name:"Migrate: Card Center Direct", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_16", name:"Migrate: H&R Block", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_17", name:"Migrate: Intuit Account", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_18", name:"Migrate: State Farm", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+
+  // ─── Tier 1: Health & Medical ───
+  t({ id:"t1_19", name:"Migrate: Anthem Insurance / Anthem Login", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_20", name:"Migrate: Delta Dental", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_21", name:"Migrate: Quantum Health", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_22", name:"Migrate: Intermountain Healthcare", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_23", name:"Migrate: Quest Diagnostics / Patient Portal", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_24", name:"Migrate: Tanner Clinic Patient Portal", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+
+  // ─── Tier 1: Work & Career ───
+  t({ id:"t1_25", name:"Migrate: ADP", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_26", name:"Migrate: Northgrum", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_27", name:"Migrate: LinkedIn", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_28", name:"Migrate: DocuSign", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_29", name:"Migrate: Fieldprint", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_30", name:"Migrate: GitHub", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+  t({ id:"t1_31", name:"Migrate: My Group Life @ Aflac", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
+
+  // ─── Tier 2 parent + grouped sub-tasks (May) ───
+  t({ id:"p05", name:"Migrate Tier 2 accounts to SimpleLogin aliases (core services, social, health apps)", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-01", due:"2026-05-15", status:"backlog", section:"Digital Sovereignty", blockedBy:["p04"] }),
+
+  t({ id:"t2_01", name:"Migrate T2: Financial — Venmo, Robinhood, Webull, Public, YNAB, Mint, Pocketguard, APMEX, Money Metals Exchange", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-01", due:"2026-05-05", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_02", name:"Migrate T2: Utilities — Conservice, Dominion Energy, Rocky Mountain Power, Enbridge Gas, T-Mobile, Intermountain Billpay", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-01", due:"2026-05-05", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_03", name:"Migrate T2: Crypto — Gemini, Phantom Wallet, Brave Wallet, Photon, Axiom, Bullx, Banana Gun, Cielo, Sol Sniper", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-05", due:"2026-05-08", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_04", name:"Migrate T2: Health apps — Marek Health, Biolife, Grifols, Everlywell, Peptide Sciences, CVS Specialty, Cronometer, EOS Fitness, Fitbod, Fitbit, FITINDEX, Elite HRV, Keto-Mojo, MyFitnessPal, Polar Flow", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-05", due:"2026-05-10", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_05", name:"Migrate T2: Work & productivity — Indeed, Mega.nz, Nextcloud, Todoist, Toggl, Wrike, OneDrive Personal Vault, Make.com, Monday", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-08", due:"2026-05-11", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_06", name:"Migrate T2: Social & comms — Signal, Telegram, Discord, Reddit, Snapchat, Instagram, USPS Informed Delivery, Meetup", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-08", due:"2026-05-11", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_07", name:"Migrate T2: Shopping — Amazon, Walmart, eBay, Costco, iHerb, Chemyo, Swisschems, UtahGunExchange", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-11", due:"2026-05-13", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_08", name:"Migrate T2: Smart home — Arlo, August, Ring-Troy, Home Assistant, Bad-Blink, Brivo, Tile Pro, Samsung-Google", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-11", due:"2026-05-13", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_09", name:"Migrate T2: Entertainment — Netflix, Hulu, YouTube, Tidal, Ground News, ChatGPT, Claude, Stability AI", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-13", due:"2026-05-15", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+
   t({ id:"p06", name:"Migrate Tier 3 accounts to SimpleLogin aliases (low-stakes, shopping, misc)", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-15", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", blockedBy:["p05"] }),
-  t({ id:"p07", name:"Confirm Microsoft account fully detached — no Tier 1 accounts remaining", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", blockedBy:["p06"] }),
+  t({ id:"p07", name:"Confirm Microsoft account fully detached — no Tier 1 accounts remaining", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", milestone:true, blockedBy:["p06"] }),
+
+  // ═══ APRIL (#M04) — Q1 Carryovers ═══
   t({ id:"a02", name:"Start consistent athletic body training block", goal:"G3", priority:"High", level:1, month:"M04", start:"2026-04-07", due:"2026-04-07", status:"todo", section:"Q1 Carryovers", notes:"CRITICAL: longest-running incomplete task. Carried from Q1/Gamma and MS3. Single highest-leverage task in the system." }),
   t({ id:"a03", name:"Install Perpetual calendar", goal:"G1", priority:"Mid", level:1, month:"M04", start:"2026-04-07", due:"2026-04-07", status:"todo", section:"Q1 Carryovers", notes:"Carried from Q1/Gamma" }),
   t({ id:"a04", name:"Find Father's journal", goal:"G1", priority:"Mid", level:4, month:"M04", start:"2026-04-07", due:"2026-04-07", status:"backlog", section:"Q1 Carryovers", notes:"Carried from Q1/Gamma" }),
@@ -69,9 +122,9 @@ export const SEED_TASKS = [
   t({ id:"a43", name:"First session: review matches, run conquest filter, send one meaningful opener or skip", goal:"G2", priority:"Mid", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a42"], notes:"Conquest filter: frame check, Longhouse man test, net gain test. If any answer is shaky — skip." }),
 
   // ═══ APRIL — Mindset ═══
-  t({ id:"a38", name:"Become self-starter / break defeated mindset daily practice", goal:"G1", priority:"High", level:3, month:"M04", start:"2026-04-15", due:"2026-04-25", status:"done", section:"Mindset", completed:true, completedDate:"2026-04-02" }),
-  t({ id:"a39", name:"Are you following your Father's counsel?", goal:"G1", priority:"Mid", level:4, month:"M04", start:"2026-04-25", due:"2026-04-28", status:"backlog", section:"Mindset" }),
-  t({ id:"a40", name:"Financial iron plan fully mapped and funded", goal:"G4", priority:"High", level:2, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"done", section:"Career & Financial", completed:true, completedDate:"2026-04-02" }),
+  t({ id:"a44", name:"Become self-starter / break defeated mindset daily practice", goal:"G1", priority:"High", level:3, month:"M04", start:"2026-04-15", due:"2026-04-25", status:"done", section:"Mindset", completed:true, completedDate:"2026-04-02" }),
+  t({ id:"a45", name:"Are you following your Father's counsel?", goal:"G1", priority:"Mid", level:4, month:"M04", start:"2026-04-25", due:"2026-04-28", status:"backlog", section:"Mindset" }),
+  t({ id:"a46", name:"Financial iron plan fully mapped and funded", goal:"G4", priority:"High", level:2, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"done", section:"Career & Financial", completed:true, completedDate:"2026-04-02" }),
 
   // ═══ MAY (#M05) — Health & Body ═══
   t({ id:"b01", name:"What is metabolic health + treat acid reflux without antacids", goal:"G3", priority:"Mid", level:2, month:"M05", start:"2026-04-28", due:"2026-05-01", status:"backlog", section:"Health & Body" }),
@@ -151,8 +204,6 @@ export const SEED_TASKS = [
   t({ id:"z05", name:"Schedule first quarterly sparring or skills assessment", goal:"G3", priority:"Low", level:2, month:"M07", start:"", due:"", status:"backlog", section:"Combat Readiness", blockedBy:["z04"] }),
 
   // ═══ BACKLOG — Cybersecurity & Sovereignty ═══
-  t({ id:"z06", name:"Proton email migration — Tier 1 accounts", goal:"G1", priority:"Low", level:2, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", notes:"Personal & professional compartments first; carried from March" }),
-  t({ id:"z07", name:"SimpleLogin alias chain setup", goal:"G1", priority:"Low", level:2, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", blockedBy:["z06"], notes:"Full alias dependency chain per Digital Sovereignty initiative" }),
   t({ id:"z08", name:"Pm Firewall — execute Phase 1 hardening block", goal:"G1", priority:"Low", level:3, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", notes:"32 tasks in security project archive; this is the entry gate" }),
   t({ id:"z09", name:"Guard Tower (1) — resume laptop hardening & compartmentalization", goal:"G1", priority:"Low", level:3, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", notes:"Project 2 stalled since Nov 2025; Windows 11 daily driver hardening" }),
   t({ id:"z10", name:"Qubes OS — migrate to primary daily driver", goal:"G1", priority:"Low", level:3, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", blockedBy:["z09"], notes:"End-state goal; dual-boot available now" }),
