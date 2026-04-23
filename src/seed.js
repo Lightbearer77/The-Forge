@@ -149,4 +149,11 @@ export const SEED_TASKS = [
   t({ id:"z03", name:"Complete first four training sessions", goal:"G3", priority:"Low", level:1, month:"M07", start:"", due:"", status:"backlog", section:"Combat Readiness", blockedBy:["z02"] }),
   t({ id:"z04", name:"Establish home drill routine — basics and movement daily", goal:"G3", priority:"Low", level:1, month:"M07", start:"", due:"", status:"backlog", section:"Combat Readiness", blockedBy:["z03"] }),
   t({ id:"z05", name:"Schedule first quarterly sparring or skills assessment", goal:"G3", priority:"Low", level:2, month:"M07", start:"", due:"", status:"backlog", section:"Combat Readiness", blockedBy:["z04"] }),
+
+  // ═══ BACKLOG — Cybersecurity & Sovereignty ═══
+  t({ id:"z06", name:"Proton email migration — Tier 1 accounts", goal:"G1", priority:"Low", level:2, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", notes:"Personal & professional compartments first; carried from March" }),
+  t({ id:"z07", name:"SimpleLogin alias chain setup", goal:"G1", priority:"Low", level:2, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", blockedBy:["z06"], notes:"Full alias dependency chain per Digital Sovereignty initiative" }),
+  t({ id:"z08", name:"Pm Firewall — execute Phase 1 hardening block", goal:"G1", priority:"Low", level:3, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", notes:"32 tasks in security project archive; this is the entry gate" }),
+  t({ id:"z09", name:"Guard Tower (1) — resume laptop hardening & compartmentalization", goal:"G1", priority:"Low", level:3, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", notes:"Project 2 stalled since Nov 2025; Windows 11 daily driver hardening" }),
+  t({ id:"z10", name:"Qubes OS — migrate to primary daily driver", goal:"G1", priority:"Low", level:3, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", blockedBy:["z09"], notes:"End-state goal; dual-boot available now" }),
 ];
