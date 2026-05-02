@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek, getWeekBounds } from "./constants.js";
 import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, exportJSON, importJSON, generateSyncCode, applySyncCode } from "./storage.js";
 import { SEED_TASKS } from "./seed.js";
+import SovereigntyCalendar from './components/SovereigntyCalendar';
 
 // ═══════════════════════════════════════════
 // THE FORGE v5.5 — Batch · Sync · Timeline · MPL Import
@@ -1637,6 +1638,7 @@ export default function ForgeApp() {
             { key: "timeline", icon: "⏤", label: "Time" },
             { key: "calendar", icon: "📅", label: "Cal" },
             { key: "dashboard", icon: "◧", label: "Dash" },
+            { key: "sovereignty", icon: "⚔", label: "Sov" },
           ].map(v => <Btn key={v.key} active={view === v.key} onClick={() => setView(v.key)}
             style={isMobile ? { padding: "5px 8px", fontSize: 13 } : {}}>{isMobile ? v.icon : `${v.icon} ${v.label}`}</Btn>)}
         </div>
@@ -1792,6 +1794,12 @@ export default function ForgeApp() {
           )}
 
           {view === "dashboard" && <Dashboard tasks={tasks} history={history} isMobile={isMobile} activity={activity} />}
+          {view === "sovereignty" && (
+  <SovereigntyCalendar
+    tasks={tasks}
+    onTaskClick={(task) => setSelectedTask && setSelectedTask(task)}
+  />
+)}
         </div>
 
         {selectedTask && !isMobile && (
