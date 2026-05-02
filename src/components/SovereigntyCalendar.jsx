@@ -10,14 +10,14 @@
 // EXPECTED TASK SHAPE (defensive — missing fields handled):
 //   {
 //     id: string,
-//     title: string,
+//     name: string,
 //     goal: 'G1' | 'G2' | 'G3' | 'G4',
 //     priority: 'High' | 'Mid' | 'Low',
 //     status: 'backlog' | 'in_progress' | 'completed' | etc,
 //     startDate: 'YYYY-MM-DD' (optional),
-//     dueDate: 'YYYY-MM-DD',
+//     due: 'YYYY-MM-DD',
 //     completedDate: 'YYYY-MM-DD' (optional),
-//     isMilestone: bool (optional),
+//     milestone: bool (optional),
 //     carriedFrom: string (optional) — flag for carryover tasks
 //   }
 //
@@ -105,9 +105,9 @@ export default function SovereigntyCalendar({ tasks = [], onTaskClick }) {
   const tasksByDate = useMemo(() => {
     const map = {};
     tasks.forEach(t => {
-      if (!t.dueDate) return;
-      if (!map[t.dueDate]) map[t.dueDate] = [];
-      map[t.dueDate].push(t);
+      if (!t.due) return;
+      if (!map[t.due]) map[t.due] = [];
+      map[t.due].push(t);
     });
     return map;
   }, [tasks]);
@@ -116,9 +116,9 @@ export default function SovereigntyCalendar({ tasks = [], onTaskClick }) {
   const weekStats = useMemo(() => {
     const stats = {}; // weekNum -> { highMid: n, completedHighMid: n }
     tasks.forEach(t => {
-      if (!t.dueDate) return;
+      if (!t.due) return;
       if (t.priority !== 'High' && t.priority !== 'Mid') return;
-      const due = parseDate(t.dueDate);
+      const due = parseDate(t.due);
       // Find which Greek month this belongs to
       for (let i = 0; i < GREEK_MONTHS.length; i++) {
         const mStart = parseDate(GREEK_MONTHS[i].start);
@@ -128,7 +128,7 @@ export default function SovereigntyCalendar({ tasks = [], onTaskClick }) {
           const wk = weekNumberFor(i, dayInMonth);
           if (!stats[wk]) stats[wk] = { total: 0, completed: 0 };
           stats[wk].total++;
-          if (t.status === 'completed' || t.completedDate) stats[wk].completed++;
+          if (t.completed || t.completedDate) stats[wk].completed++;
           break;
         }
       }
@@ -216,10 +216,10 @@ export default function SovereigntyCalendar({ tasks = [], onTaskClick }) {
   // ---- Render a single task dot ----
   const renderDot = (t) => {
     const goal = t.goal || 'G1';
-    const completed = t.status === 'completed' || !!t.completedDate;
+    const completed = t.completed || !!t.completedDate;
     const isHigh = t.priority === 'High';
     const isLow = t.priority === 'Low';
-    const isMilestone = t.isMilestone;
+    const isMilestone = t.milestone;
     const isCarryover = !!t.carriedFrom;
 
     const size = isHigh ? 10 : isLow ? 6 : 8;
@@ -261,12 +261,12 @@ export default function SovereigntyCalendar({ tasks = [], onTaskClick }) {
     const goal = t.goal || 'G1';
     const tags = [];
     if (t.priority) tags.push(t.priority);
-    if (t.isMilestone) tags.push('Milestone');
+    if (t.milestone) tags.push('Milestone');
     if (t.carriedFrom) tags.push('Carryover');
-    if (t.status === 'completed' || t.completedDate) tags.push('Done');
+    if (t.completed || t.completedDate) tags.push('Done');
     return (
       <div>
-        <div style={{ marginBottom: 4 }}>{t.title}</div>
+        <div style={{ marginBottom: 4 }}>{t.name}</div>
         <div style={{ fontSize: '0.62rem', letterSpacing: '0.07em', textTransform: 'uppercase', fontWeight: 600, color: GOAL_COLOR[goal] }}>
           {GOAL_LABEL[goal]}
         </div>
@@ -293,8 +293,8 @@ export default function SovereigntyCalendar({ tasks = [], onTaskClick }) {
             gap: 6,
             padding: '3px 0',
             cursor: 'pointer',
-            opacity: (t.status === 'completed' || t.completedDate) ? 0.5 : 1,
-            textDecoration: (t.status === 'completed' || t.completedDate) ? 'line-through' : 'none',
+            opacity: (t.completed || t.completedDate) ? 0.5 : 1,
+            textDecoration: (t.completed || t.completedDate) ? 'line-through' : 'none',
           }}
           onClick={() => { onTaskClick && onTaskClick(t); }}
         >
@@ -302,7 +302,7 @@ export default function SovereigntyCalendar({ tasks = [], onTaskClick }) {
             width: 6, height: 6, borderRadius: '50%',
             background: GOAL_COLOR[t.goal || 'G1'], flexShrink: 0,
           }} />
-          <span style={{ fontSize: '0.7rem' }}>{t.title}</span>
+          <span style={{ fontSize: '0.7rem' }}>{t.name}</span>
         </div>
       ))}
     </div>
