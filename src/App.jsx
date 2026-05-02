@@ -1795,11 +1795,11 @@ export default function ForgeApp() {
 
           {view === "dashboard" && <Dashboard tasks={tasks} history={history} isMobile={isMobile} activity={activity} />}
           {view === "sovereignty" && (
-  <SovereigntyCalendar
-    tasks={tasks}
-    onTaskClick={(task) => setSelectedTask && setSelectedTask(task)}
-  />
-)}
+            <SovereigntyCalendar
+              tasks={tasks}
+              onTaskClick={(task) => setSelectedId(task.id)}
+            />
+          )}
         </div>
 
         {selectedTask && !isMobile && (
