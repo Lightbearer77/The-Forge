@@ -209,3 +209,72 @@ export const SEED_TASKS = [
   t({ id:"z09", name:"Guard Tower (1) — resume laptop hardening & compartmentalization", goal:"G1", priority:"Low", level:3, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", notes:"Project 2 stalled since Nov 2025; Windows 11 daily driver hardening" }),
   t({ id:"z10", name:"Qubes OS — migrate to primary daily driver", goal:"G1", priority:"Low", level:3, month:"", start:"", due:"", status:"backlog", section:"Cybersecurity & Sovereignty", blockedBy:["z09"], notes:"End-state goal; dual-boot available now" }),
 ];
+
+// ═══════════════════════════════════════════════════════════════
+// MILESTONES — Master Milestones.md, April–July 2026
+// Each milestone aggregates progress from linked task IDs (taskIds)
+// and can also be marked complete manually (completed flag).
+// Display % = max(manual ? 100 : 0, linked-tasks-done / linked-tasks-total)
+// ═══════════════════════════════════════════════════════════════
+const m = (o) => ({
+  completed: false, completedDate: null, taskIds: [], notes: "", msWeek: "", ...o,
+});
+
+export const SEED_MILESTONES = [
+  // ═══ MARCH 2026 (#MS3) — historical, retained for context ═══
+  m({ id:"ms3_02", name:"Start consistent athletic body training block", goal:"G3", month:"M03", due:"2026-03-31", msTag:"MS3", msWeek:"MSW13", taskIds:["a02"], notes:"⚠ Carryover into Delta — single highest-leverage open task in the system." }),
+  m({ id:"ms3_03", name:"Review & update emergency fund / financial iron plan", goal:"G4", month:"M03", due:"2026-03-31", msTag:"MS3", msWeek:"MSW13", taskIds:["a46"], completed:true, completedDate:"2026-04-02" }),
+
+  // ═══ APRIL 2026 (#MS4) — Delta ═══
+  m({ id:"ms4_01", name:"Eatwild.com + localharvest.com research for real food sources", goal:"G3", month:"M04", due:"2026-04-05", msTag:"MS4", msWeek:"MSW14", taskIds:["a13"], completed:true, completedDate:"2026-04-02" }),
+  m({ id:"ms4_02", name:"Microplastics avoidance plan + water filter in place", goal:"G3", month:"M04", due:"2026-04-08", msTag:"MS4", msWeek:"MSW14", taskIds:["a12"], completed:true, completedDate:"2026-04-08" }),
+  m({ id:"ms4_03", name:"Body composition baseline logged", goal:"G3", month:"M04", due:"2026-04-05", msTag:"MS4", msWeek:"MSW14", taskIds:["a09"] }),
+  m({ id:"ms4_04", name:"Habit tracker fully configured with all core habits", goal:"G1", month:"M04", due:"2026-04-05", msTag:"MS4", msWeek:"MSW14", taskIds:["a05","a06","a07","a08"] }),
+  m({ id:"ms4_05", name:"Kitchen plastic audit started", goal:"G3", month:"M04", due:"2026-04-05", msTag:"MS4", msWeek:"MSW14", taskIds:["a20"] }),
+  m({ id:"ms4_06", name:"Schedule and complete blood draw + EKG once doctor approves order", goal:"G3", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW15", taskIds:["a10"] }),
+  m({ id:"ms4_07", name:"InsideTracker EKG + glucose wearable setup", goal:"G3", month:"M04", due:"2026-04-12", msTag:"MS4", msWeek:"MSW15", taskIds:["a11"], completed:true, completedDate:"2026-04-08" }),
+  m({ id:"ms4_08", name:"Structured gym training program chosen and in use", goal:"G3", month:"M04", due:"2026-04-12", msTag:"MS4", msWeek:"MSW15", taskIds:["a14"] }),
+  m({ id:"ms4_09", name:"Microsoft certification path chosen and study started", goal:"G4", month:"M04", due:"2026-04-18", msTag:"MS4", msWeek:"MSW15", taskIds:["a28","a29"] }),
+  m({ id:"ms4_10", name:"Replace all plastic food containers with glass or stainless steel", goal:"G3", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW15", taskIds:["a18"] }),
+  m({ id:"ms4_11", name:"Replace plastic cutting boards and spatulas with wood or bamboo", goal:"G3", month:"M04", due:"2026-04-12", msTag:"MS4", msWeek:"MSW15", taskIds:["a19"] }),
+  m({ id:"ms4_12", name:"Sleep optimization protocol established", goal:"G3", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW16", taskIds:["a15","a16"] }),
+  m({ id:"ms4_13", name:"SAS learning started", goal:"G4", month:"M04", due:"2026-04-18", msTag:"MS4", msWeek:"MSW16", taskIds:["a31","a32"] }),
+  m({ id:"ms4_14", name:"Review Troy moving in / mortgage discussion", goal:"G2", month:"M04", due:"2026-04-18", msTag:"MS4", msWeek:"MSW16", taskIds:["a33"], completed:true, completedDate:"2026-04-02" }),
+  m({ id:"ms4_15", name:"Switch to fresh and home-cooked meals — reduce ultra-processed", goal:"G3", month:"M04", due:"2026-04-20", msTag:"MS4", msWeek:"MSW16", taskIds:["a22"] }),
+  m({ id:"ms4_16", name:"Personal vetting criteria defined for wife-seeking", goal:"G2", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW16", taskIds:["a35"] }),
+  m({ id:"ms4_17", name:"Pre and post workout nutrition protocol built", goal:"G3", month:"M04", due:"2026-04-22", msTag:"MS4", msWeek:"MSW17", taskIds:["a23"] }),
+  m({ id:"ms4_18", name:"Continue Phase 1 stealth incentives at next meetup + score 7-item readiness checklist", goal:"G2", month:"M04", due:"2026-04-30", msTag:"MS4", msWeek:"MSW17", taskIds:["a37"] }),
+  m({ id:"ms4_19", name:"Dating platform or community joined", goal:"G2", month:"M04", due:"2026-04-25", msTag:"MS4", msWeek:"MSW17", taskIds:["a36","a38"] }),
+  m({ id:"ms4_20", name:"Become self-starter / break defeated mindset daily practice started", goal:"G1", month:"M04", due:"2026-04-25", msTag:"MS4", msWeek:"MSW17", taskIds:["a44"], completed:true, completedDate:"2026-04-02" }),
+  m({ id:"ms4_21", name:"Financial iron plan fully mapped and funded", goal:"G4", month:"M04", due:"2026-04-30", msTag:"MS4", msWeek:"MSW17", taskIds:["a46"], completed:true, completedDate:"2026-04-02" }),
+
+  // ═══ MAY 2026 (#MS5) — Epsilon ═══
+  m({ id:"ms5_01", name:"Blood draw + EKG results reviewed and actioned", goal:"G3", month:"M05", due:"2026-05-07", msTag:"MS5", msWeek:"MSW18", taskIds:["a10"] }),
+  m({ id:"ms5_02", name:"DNA test kit ordered and sample sent", goal:"G3", month:"M05", due:"2026-05-03", msTag:"MS5", msWeek:"MSW18", taskIds:["b04","b05"] }),
+  m({ id:"ms5_03", name:"Metabolic health re-test completed", goal:"G3", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW19", taskIds:["b01","b03"] }),
+  m({ id:"ms5_04", name:"Keto meat nutrient mapping finished", goal:"G3", month:"M05", due:"2026-05-18", msTag:"MS5", msWeek:"MSW20", taskIds:["b19","b20"] }),
+  m({ id:"ms5_05", name:"Custom supplements plan built and ordered", goal:"G3", month:"M05", due:"2026-05-28", msTag:"MS5", msWeek:"MSW20", taskIds:["b06","b07","b08"] }),
+  m({ id:"ms5_06", name:"Emergency fund at 75% target", goal:"G4", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:[], notes:"Manual checkpoint — track via banking review. No discrete task." }),
+  m({ id:"ms5_07", name:"Kitchen fully converted to plastic-free storage, cooking, and prep", goal:"G3", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:["a18","a19","a20","a25","a26","c12","c13"] }),
+  m({ id:"ms5_08", name:"Home fiber environment converted to natural materials", goal:"G3", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:["b10","b11","b12"] }),
+  m({ id:"ms5_09", name:"Purchase HEPA vacuum and establish regular dusting routine", goal:"G3", month:"M05", due:"2026-05-20", msTag:"MS5", msWeek:"MSW20", taskIds:["b14"] }),
+  m({ id:"ms5_10", name:"Research and purchase air purifier", goal:"G3", month:"M05", due:"2026-05-25", msTag:"MS5", msWeek:"MSW21", taskIds:["b15"] }),
+  m({ id:"ms5_11", name:"Sign and print the Primal Longhouse Oath — bring to next meetup", goal:"G2", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b25"] }),
+  m({ id:"ms5_12", name:"Schedule the first elevated ritual gathering (read oath aloud)", goal:"G2", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b26"] }),
+  m({ id:"ms5_13", name:"Consistent approach practice established — minimum 2 per week", goal:"G2", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b23","b24"] }),
+  m({ id:"ms5_14", name:"Complete first full month gym attendance review", goal:"G3", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b09"] }),
+
+  // ═══ JUNE 2026 (#MS6) — Zeta ═══
+  m({ id:"ms6_01", name:"Tribe at 4–6 members with vetting process started", goal:"G2", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:[], notes:"Aggregate tribal milestone — manual checkpoint scored at meetup." }),
+  m({ id:"ms6_02", name:"Troy moving in confirmed or decision made", goal:"G2", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c03","c04"] }),
+  m({ id:"ms6_03", name:"Protective order reviewed and enforcement steps taken", goal:"G2", month:"M06", due:"2026-06-05", msTag:"MS6", msWeek:"MSW23", taskIds:["c01","c02"] }),
+  m({ id:"ms6_04", name:"Bank switch completed + best money storage plan active", goal:"G4", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c05","c06","c07"] }),
+  m({ id:"ms6_05", name:"Smart home fully installed and optimized", goal:"G2", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c08","c09","c10","c11"] }),
+  m({ id:"ms6_06", name:"Full home microplastics audit completed — all major vectors controlled", goal:"G3", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c13","c14","c15","c16","c17","c19","c20"] }),
+  m({ id:"ms6_07", name:"Microplastics clan law drafted", goal:"G3", month:"M06", due:"2026-06-20", msTag:"MS6", msWeek:"MSW25", taskIds:["c18"] }),
+
+  // ═══ JULY 2026 (#MS7) — Eta ═══
+  m({ id:"ms7_01", name:"Athletic body training block — first formal assessment completed", goal:"G3", month:"M07", due:"2026-07-31", msTag:"MS7", msWeek:"MSW30", taskIds:["d01"] }),
+  m({ id:"ms7_02", name:"Cognition baseline test completed", goal:"G3", month:"M07", due:"2026-07-05", msTag:"MS7", msWeek:"MSW27", taskIds:["d02"] }),
+  m({ id:"ms7_03", name:"Nutrition standard defined and being followed", goal:"G3", month:"M07", due:"2026-07-15", msTag:"MS7", msWeek:"MSW29", taskIds:["d03"] }),
+];
