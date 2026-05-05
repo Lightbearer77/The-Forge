@@ -1,6 +1,7 @@
 const TASKS_KEY = "forge-pm-tasks-v5";
 const HISTORY_KEY = "forge-pm-history-v5";
 const ACTIVITY_KEY = "forge-pm-activity-v5";
+const MILESTONES_KEY = "forge-pm-milestones-v6";
 
 // Migration: carry over v3 data if v5 is empty
 const V3_KEY = "forge-pm-tasks-v3";
@@ -13,7 +14,6 @@ export const loadTasks = () => {
     data = localStorage.getItem(V3_KEY);
     if (data) {
       const tasks = JSON.parse(data);
-      // Add v5 fields to old tasks
       return tasks.map(t => ({
         ...t,
         blockedBy: t.blockedBy || [],
@@ -50,14 +50,26 @@ export const loadActivity = () => {
 
 export const saveActivity = (log) => {
   try {
-    // Keep last 500 entries max
     const trimmed = log.slice(-500);
     localStorage.setItem(ACTIVITY_KEY, JSON.stringify(trimmed));
   } catch (e) { console.error("Save activity failed:", e); }
 };
 
-export const exportJSON = (tasks, history, activity) => {
-  const data = { tasks, history, activity, exportedAt: new Date().toISOString(), version: "5.4" };
+// ─── Milestones (v6) ───
+export const loadMilestones = () => {
+  try {
+    const data = localStorage.getItem(MILESTONES_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch { return null; }
+};
+
+export const saveMilestones = (milestones) => {
+  try { localStorage.setItem(MILESTONES_KEY, JSON.stringify(milestones)); }
+  catch (e) { console.error("Save milestones failed:", e); }
+};
+
+export const exportJSON = (tasks, history, activity, milestones) => {
+  const data = { tasks, history, activity, milestones, exportedAt: new Date().toISOString(), version: "6.0" };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -80,8 +92,8 @@ export const importJSON = (file) => {
 };
 
 // ─── Sync Code (no backend needed) ───
-export const generateSyncCode = (tasks, history, activity) => {
-  const data = { t: tasks, h: history, a: activity, v: "5.5", ts: Date.now() };
+export const generateSyncCode = (tasks, history, activity, milestones) => {
+  const data = { t: tasks, h: history, a: activity, m: milestones, v: "6.0", ts: Date.now() };
   return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
 };
 
@@ -89,7 +101,7 @@ export const applySyncCode = (code) => {
   try {
     const json = decodeURIComponent(escape(atob(code.trim())));
     const data = JSON.parse(json);
-    return { tasks: data.t, history: data.h, activity: data.a, timestamp: data.ts };
+    return { tasks: data.t, history: data.h, activity: data.a, milestones: data.m, timestamp: data.ts };
   } catch (e) {
     return null;
   }
