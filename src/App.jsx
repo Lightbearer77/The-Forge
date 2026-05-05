@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek, getWeekBounds } from "./constants.js";
-import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, exportJSON, importJSON, generateSyncCode, applySyncCode } from "./storage.js";
-import { SEED_TASKS } from "./seed.js";
+import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, loadMilestones, saveMilestones, exportJSON, importJSON, generateSyncCode, applySyncCode } from "./storage.js";
+import { SEED_TASKS, SEED_MILESTONES } from "./seed.js";
 import SovereigntyCalendar from './components/SovereigntyCalendar';
 
 // ═══════════════════════════════════════════
-// THE FORGE v5.5 — Batch · Sync · Timeline · MPL Import
+// THE FORGE v6.0 — Milestones · Batch · Sync · Timeline · MPL Import
 // Dependencies · AI Panel · Recurring Tasks
 // Obsidian Export · Completion History
 // ═══════════════════════════════════════════
@@ -805,20 +805,20 @@ const BatchBar = ({ count, onComplete, onDelete, onMove, onCancel, isMobile }) =
 );
 
 // ─── Sync Modal ───
-const SyncModal = ({ tasks, history, activity, onApply, onClose }) => {
+const SyncModal = ({ tasks, history, activity, milestones, onApply, onClose }) => {
   const [tab, setTab] = useState("export");
   const [code, setCode] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
-  const syncCode = useMemo(() => generateSyncCode(tasks, history, activity), [tasks, history, activity]);
+  const syncCode = useMemo(() => generateSyncCode(tasks, history, activity, milestones), [tasks, history, activity, milestones]);
 
   const handleApply = () => {
     const data = applySyncCode(code);
     if (!data) { setError("Invalid sync code"); return; }
     const age = Date.now() - (data.timestamp || 0);
     const ageStr = age < 60000 ? "just now" : age < 3600000 ? `${Math.round(age/60000)}m ago` : `${Math.round(age/3600000)}h ago`;
-    if (confirm(`Apply sync data? (${data.tasks?.length || 0} tasks, generated ${ageStr})\n\nThis will replace all current data.`)) {
+    if (confirm(`Apply sync data? (${data.tasks?.length || 0} tasks, ${data.milestones?.length || 0} milestones, generated ${ageStr})\n\nThis will replace all current data.`)) {
       onApply(data);
       onClose();
     }
@@ -999,7 +999,7 @@ const CalendarView = ({ tasks, month, onMonthChange, onSelect, selectedId }) => 
 };
 
 // ─── Dashboard ───
-const Dashboard = ({ tasks, history, isMobile, activity }) => {
+const Dashboard = ({ tasks, history, isMobile, activity, milestones, onSelectMilestone }) => {
   const active = tasks.filter(t => !t.parentId);
   const completed = active.filter(t => t.completed).length;
   const total = active.length;
@@ -1102,6 +1102,9 @@ const Dashboard = ({ tasks, history, isMobile, activity }) => {
           </div>
         )}
       </div>
+
+      {/* Milestones for current month */}
+      <MilestonesCard milestones={milestones} allTasks={tasks} isMobile={isMobile} onSelect={onSelectMilestone} />
 
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)", gap: isMobile ? 8 : 12, marginBottom: 20 }}>
@@ -1361,6 +1364,310 @@ ${od.map(t => `- OVERDUE [${t.priority}] [${t.goal}] "${t.name}" was due:${t.due
 };
 
 // ═══════ MAIN APP ═══════
+// ─── Milestone Components ───
+const computeMilestonePct = (ms, allTasks) => {
+  const linked = (ms.taskIds || []).map(id => allTasks.find(t => t.id === id)).filter(Boolean);
+  const linkedDone = linked.filter(t => t.completed).length;
+  const linkedPct = linked.length > 0 ? Math.round((linkedDone / linked.length) * 100) : 0;
+  const pct = ms.completed ? 100 : linkedPct;
+  return { pct, linked, linkedDone };
+};
+
+const MilestoneRow = ({ milestone, allTasks, onToggle, onSelect, selectedId, isMobile }) => {
+  const { pct, linked, linkedDone } = computeMilestonePct(milestone, allTasks);
+  const manualDone = milestone.completed;
+  const goalColor = GOALS[milestone.goal]?.color || "#888";
+  const goalIcon = GOALS[milestone.goal]?.icon || "•";
+  const dueLate = milestone.due && new Date(milestone.due + "T23:59:59") < new Date() && !manualDone;
+  const fullyDone = pct === 100;
+
+  return (
+    <div onClick={() => onSelect(milestone.id)} style={{
+      padding: 12, marginBottom: 8, borderRadius: 8, cursor: "pointer",
+      background: selectedId === milestone.id ? "rgba(201,168,76,0.08)" : "rgba(255,255,255,0.03)",
+      border: `1px solid ${selectedId === milestone.id ? "rgba(201,168,76,0.3)" : "rgba(255,255,255,0.06)"}`,
+      ...(manualDone ? { opacity: 0.65 } : {}),
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+        <button onClick={(e) => { e.stopPropagation(); onToggle(milestone.id); }} style={{
+          width: 22, height: 22, borderRadius: 4,
+          border: `2px solid ${manualDone ? goalColor : fullyDone ? "#5B8A72" : "rgba(255,255,255,0.2)"}`,
+          background: manualDone ? goalColor : "transparent",
+          color: "#0f0f0f", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, marginTop: 1,
+        }} title={manualDone ? "Mark incomplete" : "Mark complete"}>{manualDone ? "✓" : ""}</button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#e5e5e5", textDecoration: manualDone ? "line-through" : "none", lineHeight: 1.3 }}>
+            {milestone.name}
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <Pill bg={`${goalColor}22`} color={goalColor}>{goalIcon} {milestone.goal}</Pill>
+            {milestone.msTag && <Pill>{milestone.msTag}{milestone.msWeek ? ` · ${milestone.msWeek}` : ""}</Pill>}
+            {milestone.due && <Pill bg={dueLate ? "rgba(232,69,60,0.15)" : undefined} color={dueLate ? "#E8453C" : undefined}>📅 {fmtDate(milestone.due)}</Pill>}
+            {linked.length > 0 && <Pill bg="rgba(201,168,76,0.1)" color="#C9A84C">{linkedDone}/{linked.length} tasks</Pill>}
+            {linked.length === 0 && <Pill bg="rgba(75,75,75,0.3)" color="rgba(255,255,255,0.4)">manual</Pill>}
+          </div>
+        </div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: pct === 100 ? "#5B8A72" : pct >= 50 ? "#D4A84B" : "#888" }}>{pct}%</div>
+        </div>
+      </div>
+      <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? "#5B8A72" : goalColor, transition: "width 0.3s" }} />
+      </div>
+    </div>
+  );
+};
+
+const MilestonesView = ({ milestones, allTasks, onToggle, onSelect, selectedId, isMobile, onAddNew, filterGoal, filterMonth, showCompleted }) => {
+  const filtered = milestones.filter(ms => {
+    if (filterGoal !== "all" && ms.goal !== filterGoal) return false;
+    if (filterMonth !== "all" && ms.month !== filterMonth) return false;
+    if (!showCompleted) {
+      const { pct } = computeMilestonePct(ms, allTasks);
+      if (ms.completed || pct === 100) return false;
+    }
+    return true;
+  });
+
+  const byMonth = {};
+  filtered.forEach(ms => {
+    const key = ms.month || "Unscheduled";
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(ms);
+  });
+  const monthOrder = GREEK_MONTHS.map(g => g.id);
+  const sortedKeys = Object.keys(byMonth).sort((a, b) => {
+    if (a === "Unscheduled") return 1; if (b === "Unscheduled") return -1;
+    return monthOrder.indexOf(a) - monthOrder.indexOf(b);
+  });
+  Object.values(byMonth).forEach(arr => arr.sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999")));
+
+  if (filtered.length === 0) {
+    return (
+      <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.4)" }}>
+        <div style={{ fontSize: 28, marginBottom: 12 }}>🎯</div>
+        <div style={{ fontSize: 13, marginBottom: 16 }}>No milestones match the current filter.</div>
+        <button onClick={onAddNew} style={{
+          padding: "8px 16px", borderRadius: 6, border: "none",
+          background: "rgba(201,168,76,0.15)", color: "#C9A84C", cursor: "pointer", fontWeight: 600, fontSize: 12,
+        }}>+ New Milestone</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: isMobile ? 10 : 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{filtered.length} milestone{filtered.length !== 1 ? "s" : ""}</div>
+        <button onClick={onAddNew} style={{
+          padding: "6px 12px", borderRadius: 6, border: "none",
+          background: "rgba(201,168,76,0.15)", color: "#C9A84C", cursor: "pointer", fontWeight: 600, fontSize: 11,
+        }}>+ New Milestone</button>
+      </div>
+      {sortedKeys.map(key => {
+        const gm = GREEK_MONTHS.find(g => g.id === key);
+        const arr = byMonth[key];
+        const monthDone = arr.filter(ms => computeMilestonePct(ms, allTasks).pct === 100).length;
+        return (
+          <div key={key} style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, paddingBottom: 6, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#C9A84C", textTransform: "uppercase", letterSpacing: 1 }}>
+                🎯 {gm ? gm.name : key} {gm ? `(${key})` : ""}
+              </h3>
+              <Pill>{monthDone}/{arr.length} done</Pill>
+            </div>
+            {arr.map(ms => (
+              <MilestoneRow key={ms.id} milestone={ms} allTasks={allTasks}
+                onToggle={onToggle} onSelect={onSelect} selectedId={selectedId} isMobile={isMobile} />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const MilestonesCard = ({ milestones, allTasks, isMobile, onSelect }) => {
+  const currentMonth = getGreekMonth();
+  const thisMonth = (milestones || []).filter(ms => ms.month === currentMonth);
+  if (thisMonth.length === 0) return null;
+  const open = thisMonth.filter(ms => {
+    const { pct } = computeMilestonePct(ms, allTasks);
+    return !ms.completed && pct < 100;
+  });
+  const done = thisMonth.length - open.length;
+  const gm = GREEK_MONTHS.find(g => g.id === currentMonth);
+  const display = open.slice().sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"));
+
+  return (
+    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 16, marginBottom: 16, border: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: 1 }}>
+          🎯 Milestones — {gm?.name || currentMonth}
+        </div>
+        <Pill bg="rgba(91,138,114,0.15)" color="#5B8A72">{done}/{thisMonth.length} done</Pill>
+      </div>
+      {display.length === 0 ? (
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center", padding: 12 }}>All milestones complete this month. ⚡</div>
+      ) : display.slice(0, 6).map(ms => {
+        const { pct, linked, linkedDone } = computeMilestonePct(ms, allTasks);
+        const goalColor = GOALS[ms.goal]?.color || "#888";
+        const dueLate = ms.due && new Date(ms.due + "T23:59:59") < new Date();
+        return (
+          <div key={ms.id} onClick={() => onSelect && onSelect(ms.id)} style={{ marginBottom: 10, cursor: onSelect ? "pointer" : "default" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4, gap: 8, alignItems: "center" }}>
+              <span style={{ color: "#e5e5e5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                <span style={{ color: goalColor, marginRight: 4 }}>{GOALS[ms.goal]?.icon}</span>{ms.name}
+              </span>
+              <span style={{ color: dueLate ? "#E8453C" : "rgba(255,255,255,0.4)", flexShrink: 0, fontSize: 10, fontWeight: 600 }}>
+                {linked.length > 0 ? `${linkedDone}/${linked.length}` : "—"} · {pct}%
+              </span>
+            </div>
+            <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
+              <div style={{ height: "100%", background: pct === 100 ? "#5B8A72" : goalColor, borderRadius: 2, width: `${pct}%`, transition: "width 0.3s" }} />
+            </div>
+          </div>
+        );
+      })}
+      {display.length > 6 && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>+{display.length - 6} more open</div>}
+    </div>
+  );
+};
+
+const MilestoneEditModal = ({ milestone, allTasks, onSave, onDelete, onClose, currentMonth }) => {
+  const isEdit = !!milestone;
+  const [name, setName] = useState(milestone?.name || "");
+  const [goal, setGoal] = useState(milestone?.goal || "G1");
+  const [month, setMonth] = useState(milestone?.month || currentMonth);
+  const [due, setDue] = useState(milestone?.due || "");
+  const [msTag, setMsTag] = useState(milestone?.msTag || "");
+  const [msWeek, setMsWeek] = useState(milestone?.msWeek || "");
+  const [notes, setNotes] = useState(milestone?.notes || "");
+  const [taskIds, setTaskIds] = useState(milestone?.taskIds || []);
+  const [taskFilter, setTaskFilter] = useState("");
+
+  // Auto-derive msTag from month if blank
+  useEffect(() => {
+    if (!msTag && month) {
+      const gm = GREEK_MONTHS.find(g => g.id === month);
+      if (gm) {
+        const calMonth = parseInt(gm.start.split("-")[0]);
+        setMsTag(`MS${calMonth}`);
+      }
+    }
+    // eslint-disable-next-line
+  }, [month]);
+
+  const candidateTasks = allTasks.filter(t => !t.parentId && (
+    t.month === month || taskIds.includes(t.id) || (taskFilter && t.name.toLowerCase().includes(taskFilter.toLowerCase()))
+  ));
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave({
+      id: milestone?.id || ("ms_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5)),
+      name: name.trim(), goal, month, due,
+      msTag: msTag.trim(), msWeek: msWeek.trim(),
+      notes: notes.trim(),
+      taskIds: taskIds.filter(Boolean),
+      completed: milestone?.completed || false,
+      completedDate: milestone?.completedDate || null,
+    });
+    onClose();
+  };
+
+  const toggleTask = (id) => {
+    setTaskIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: 10, padding: 20, width: "min(560px, 95vw)", maxHeight: "90vh", overflowY: "auto", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#C9A84C" }}>
+            🎯 {isEdit ? "Edit Milestone" : "New Milestone"}
+          </span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 18 }}>✕</button>
+        </div>
+
+        <Field label="Name">
+          <input value={name} onChange={e => setName(e.target.value)} style={inputStyle} placeholder="e.g. Body composition baseline logged" autoFocus />
+        </Field>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <Field label="Goal">
+            <select value={goal} onChange={e => setGoal(e.target.value)} style={selectStyle}>
+              {Object.entries(GOALS).map(([k, v]) => <option key={k} value={k}>{v.icon} {k} — {v.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Greek Month">
+            <select value={month} onChange={e => setMonth(e.target.value)} style={selectStyle}>
+              {GREEK_MONTHS.map(g => <option key={g.id} value={g.id}>{g.name} ({g.id})</option>)}
+            </select>
+          </Field>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+          <Field label="Due Date">
+            <input type="date" value={due} onChange={e => setDue(e.target.value)} style={inputStyle} />
+          </Field>
+          <Field label="MS Tag">
+            <input value={msTag} onChange={e => setMsTag(e.target.value)} style={inputStyle} placeholder="MS4" />
+          </Field>
+          <Field label="MS Week">
+            <input value={msWeek} onChange={e => setMsWeek(e.target.value)} style={inputStyle} placeholder="MSW15" />
+          </Field>
+        </div>
+
+        <Field label="Notes">
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} style={{ ...inputStyle, minHeight: 50, fontFamily: "inherit", resize: "vertical" }} placeholder="Optional notes" />
+        </Field>
+
+        <Field label={`Linked Tasks — ${taskIds.length} selected`}>
+          <input value={taskFilter} onChange={e => setTaskFilter(e.target.value)} placeholder="Search any task..." style={{ ...inputStyle, marginBottom: 6, fontSize: 11 }} />
+          <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", padding: 4, maxHeight: 180, overflowY: "auto" }}>
+            {candidateTasks.length === 0 ? (
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", padding: 8, textAlign: "center" }}>No matching tasks. Try changing month or searching.</div>
+            ) : candidateTasks.slice(0, 50).map(t => {
+              const checked = taskIds.includes(t.id);
+              return (
+                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", cursor: "pointer", borderRadius: 4, background: checked ? "rgba(201,168,76,0.08)" : "transparent" }}>
+                  <input type="checkbox" checked={checked} onChange={() => toggleTask(t.id)} />
+                  <span style={{ color: GOALS[t.goal]?.color, fontSize: 11 }}>{GOALS[t.goal]?.icon}</span>
+                  <span style={{ fontSize: 11, color: "#e5e5e5", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {t.completed ? "✓ " : ""}{t.name}
+                  </span>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>{t.month}</span>
+                </label>
+              );
+            })}
+            {candidateTasks.length > 50 && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", padding: 6, textAlign: "center" }}>+{candidateTasks.length - 50} more — refine search</div>}
+          </div>
+        </Field>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "space-between" }}>
+          {isEdit ? (
+            <button onClick={() => { if (confirm("Delete this milestone?")) { onDelete(milestone.id); onClose(); } }} style={{
+              padding: "8px 14px", borderRadius: 6, border: "none", background: "rgba(232,69,60,0.15)", color: "#E8453C", cursor: "pointer", fontSize: 12, fontWeight: 600,
+            }}>🗑 Delete</button>
+          ) : <div />}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={onClose} style={{
+              padding: "8px 14px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 12,
+            }}>Cancel</button>
+            <button onClick={handleSave} disabled={!name.trim()} style={{
+              padding: "8px 14px", borderRadius: 6, border: "none",
+              background: name.trim() ? "rgba(201,168,76,0.2)" : "rgba(201,168,76,0.05)",
+              color: name.trim() ? "#C9A84C" : "rgba(201,168,76,0.3)",
+              cursor: name.trim() ? "pointer" : "not-allowed", fontSize: 12, fontWeight: 700,
+            }}>{isEdit ? "Save" : "Create"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ForgeApp() {
   const isMobile = useIsMobile();
   const [tasks, setTasks] = useState([]);
@@ -1387,6 +1694,9 @@ export default function ForgeApp() {
   const [batchIds, setBatchIds] = useState(new Set());
   const [showSync, setShowSync] = useState(false);
   const [showImportMPL, setShowImportMPL] = useState(false);
+  const [milestones, setMilestones] = useState([]);
+  const [showMilestoneEdit, setShowMilestoneEdit] = useState(false);
+  const [editingMilestoneId, setEditingMilestoneId] = useState(null);
   const undoStack = useRef([]);
   const [undoToast, setUndoToast] = useState(null); // { message, snapshot }
 
@@ -1421,6 +1731,8 @@ export default function ForgeApp() {
     setTasks(saved && saved.length > 0 ? saved : SEED_TASKS);
     setHistory(loadHistory() || []);
     setActivity(loadActivity());
+    const savedMs = loadMilestones();
+    setMilestones(savedMs && savedMs.length > 0 ? savedMs : SEED_MILESTONES);
     setLoaded(true);
   }, []);
 
@@ -1469,6 +1781,7 @@ export default function ForgeApp() {
   useEffect(() => { if (loaded) debouncedSave(tasks); }, [tasks, loaded]);
   useEffect(() => { if (loaded && history.length > 0) saveHistory(history); }, [history, loaded]);
   useEffect(() => { if (loaded && activity.length > 0) saveActivity(activity); }, [activity, loaded]);
+  useEffect(() => { if (loaded) saveMilestones(milestones); }, [milestones, loaded]);
 
   const sections = useMemo(() => [...new Set(tasks.map(t => t.section).filter(Boolean))].sort(), [tasks]);
   const exportMd = useMemo(() => generateObsidianExport(tasks), [tasks]);
@@ -1557,6 +1870,43 @@ export default function ForgeApp() {
     }]);
   }, [tasks]);
 
+  // ─── Milestone CRUD ───
+  const toggleMilestone = useCallback((id) => {
+    setMilestones(prev => prev.map(ms => {
+      if (ms.id !== id) return ms;
+      const nowCompleting = !ms.completed;
+      return { ...ms, completed: nowCompleting, completedDate: nowCompleting ? todayStr() : null };
+    }));
+    const ms = milestones.find(x => x.id === id);
+    if (ms) {
+      setActivity(prev => [...prev, {
+        action: ms.completed ? "deleted" : "completed",
+        taskName: `🎯 ${ms.name}`, timestamp: new Date().toISOString(),
+      }]);
+    }
+  }, [milestones]);
+
+  const saveMilestone = useCallback((m) => {
+    setMilestones(prev => {
+      const exists = prev.find(x => x.id === m.id);
+      if (exists) return prev.map(x => x.id === m.id ? m : x);
+      return [...prev, m];
+    });
+    setActivity(prev => [...prev, {
+      action: milestones.find(x => x.id === m.id) ? "status" : "created",
+      taskName: `🎯 ${m.name}`, timestamp: new Date().toISOString(),
+    }]);
+  }, [milestones]);
+
+  const deleteMilestone = useCallback((id) => {
+    const ms = milestones.find(x => x.id === id);
+    setMilestones(prev => prev.filter(x => x.id !== id));
+    if (ms) {
+      setActivity(prev => [...prev, { action: "deleted", taskName: `🎯 ${ms.name}`, timestamp: new Date().toISOString() }]);
+    }
+  }, [milestones]);
+
+
   const changeStatus = useCallback((id, s) => {
     setTasks(prev => {
       const target = prev.find(t => t.id === id);
@@ -1580,6 +1930,7 @@ export default function ForgeApp() {
         if (data.tasks) { setTasks(data.tasks); saveTasks(data.tasks); }
         if (data.history) { setHistory(data.history); saveHistory(data.history); }
         if (data.activity) { setActivity(data.activity); saveActivity(data.activity); }
+        if (data.milestones) { setMilestones(data.milestones); saveMilestones(data.milestones); }
         alert("Import successful!");
       } catch (err) { alert("Import failed: " + err.message); }
     };
@@ -1637,6 +1988,7 @@ export default function ForgeApp() {
             { key: "kanban", icon: "▦", label: "Kanban" },
             { key: "timeline", icon: "⏤", label: "Time" },
             { key: "calendar", icon: "📅", label: "Cal" },
+            { key: "milestones", icon: "🎯", label: "Mile" },
             { key: "dashboard", icon: "◧", label: "Dash" },
             { key: "sovereignty", icon: "⚔", label: "Sov" },
           ].map(v => <Btn key={v.key} active={view === v.key} onClick={() => setView(v.key)}
@@ -1651,17 +2003,17 @@ export default function ForgeApp() {
           if (isMobile) {
             const items = ["export JSON", "import JSON", "obsidian export", "import MPL", "reset seed data"];
             const choice = prompt("Options:\n1) export\n2) import\n3) obsidian export\n4) import MPL\n5) reset\n\nType number:");
-            if (choice === "1") exportJSON(tasks, history, activity);
+            if (choice === "1") exportJSON(tasks, history, activity, milestones);
             else if (choice === "2") handleImport();
             else if (choice === "3") setShowExport(true);
             else if (choice === "4") setShowImportMPL(true);
-            else if (choice === "5") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); } }
+            else if (choice === "5") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); setMilestones(SEED_MILESTONES); saveMilestones(SEED_MILESTONES); } }
           } else {
             const action = prompt("Type 'export', 'import', 'mpl' (import MPL), or 'reset':");
-            if (action === "export") exportJSON(tasks, history, activity);
+            if (action === "export") exportJSON(tasks, history, activity, milestones);
             else if (action === "import") handleImport();
             else if (action === "mpl") setShowImportMPL(true);
-            else if (action === "reset") { if (confirm("Reset all tasks to seed data? This cannot be undone.")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); } }
+            else if (action === "reset") { if (confirm("Reset all tasks to seed data? This cannot be undone.")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); setMilestones(SEED_MILESTONES); saveMilestones(SEED_MILESTONES); } }
           }
         }} style={isMobile ? { padding: "5px 8px" } : {}}>⚙</Btn>
         <button onClick={() => setShowNewTask(true)} style={{
@@ -1793,7 +2145,18 @@ export default function ForgeApp() {
             <TimelineView tasks={tasks} onSelect={setSelectedId} selectedId={selectedId} isMobile={isMobile} />
           )}
 
-          {view === "dashboard" && <Dashboard tasks={tasks} history={history} isMobile={isMobile} activity={activity} />}
+          {view === "dashboard" && <Dashboard tasks={tasks} history={history} isMobile={isMobile} activity={activity} milestones={milestones} onSelectMilestone={(id) => { setEditingMilestoneId(id); setShowMilestoneEdit(true); }} />}
+          {view === "milestones" && (
+            <MilestonesView
+              milestones={milestones} allTasks={tasks}
+              onToggle={toggleMilestone}
+              onSelect={(id) => { setEditingMilestoneId(id); setShowMilestoneEdit(true); }}
+              selectedId={editingMilestoneId}
+              isMobile={isMobile}
+              onAddNew={() => { setEditingMilestoneId(null); setShowMilestoneEdit(true); }}
+              filterGoal={filterGoal} filterMonth={filterMonth} showCompleted={showCompleted}
+            />
+          )}
           {view === "sovereignty" && (
             <SovereigntyCalendar
               tasks={tasks}
@@ -1847,11 +2210,12 @@ export default function ForgeApp() {
       )}
 
       {/* Sync Modal */}
-      {showSync && <SyncModal tasks={tasks} history={history} activity={activity}
+      {showSync && <SyncModal tasks={tasks} history={history} activity={activity} milestones={milestones}
         onApply={(data) => {
           if (data.tasks) { setTasks(data.tasks); saveTasks(data.tasks); }
           if (data.history) { setHistory(data.history); saveHistory(data.history); }
           if (data.activity) { setActivity(data.activity); saveActivity(data.activity); }
+          if (data.milestones) { setMilestones(data.milestones); saveMilestones(data.milestones); }
         }}
         onClose={() => setShowSync(false)} />}
 
@@ -1867,6 +2231,18 @@ export default function ForgeApp() {
 
       {/* Undo Toast */}
       {undoToast && <UndoToast message={undoToast.message} onUndo={doUndo} onDismiss={() => setUndoToast(null)} />}
+
+      {/* Milestone Edit Modal */}
+      {showMilestoneEdit && (
+        <MilestoneEditModal
+          milestone={editingMilestoneId ? milestones.find(m => m.id === editingMilestoneId) : null}
+          allTasks={tasks}
+          onSave={saveMilestone}
+          onDelete={deleteMilestone}
+          onClose={() => { setShowMilestoneEdit(false); setEditingMilestoneId(null); }}
+          currentMonth={getGreekMonth()}
+        />
+      )}
     </div>
   );
 }
