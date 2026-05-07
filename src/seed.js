@@ -7,7 +7,7 @@ const t = (o) => ({
 export const SEED_TASKS = [
   // ═══ APRIL (#M04) — Digital Sovereignty ═══
   t({ id:"a01", name:"Define Proton primary vs alias decision criteria", goal:"G1", priority:"High", level:2, month:"M04", start:"2026-04-17", due:"2026-04-19", status:"done", section:"Digital Sovereignty", completed:true, completedDate:"2026-04-23", notes:"Architecture locked: @proton.me primary, SimpleLogin alias model for all accounts. Tier list built from KeePass audit." }),
-  t({ id:"p01", name:"Set up SimpleLogin — create account, verify alias domain, test one alias end-to-end", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-23", due:"2026-04-27", status:"done", section:"Digital Sovereignty", completed:true, completedDate:"2026-04-27", blockedBy:["a01"], notes:"Free tier tested and confirmed working end-to-end. Paid subscription to activate May 2026." }),
+  t({ id:"p01", name:"Set up SimpleLogin — create account, verify alias domain, test one alias end-to-end", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-04-23", due:"2026-04-27", status:"done", section:"Digital Sovereignty", completed:true, completedDate:"2026-04-27", blockedBy:["a01"], notes:"Free tier tested and confirmed working end-to-end. Paid subscription to activate May 2026." }),
   t({ id:"p02", name:"Audit and export full account list from password manager", goal:"G1", priority:"High", level:1, month:"M04", start:"2026-04-19", due:"2026-04-21", status:"done", section:"Digital Sovereignty", completed:true, completedDate:"2026-04-23", notes:"KeePass audit completed. ~130+ accounts catalogued across 11 screenshots." }),
   t({ id:"p03", name:"Categorize account list into Tier 1 / Tier 2 / Tier 3", goal:"G1", priority:"High", level:2, month:"M04", start:"2026-04-21", due:"2026-04-22", status:"done", section:"Digital Sovereignty", completed:true, completedDate:"2026-04-23", notes:"Tier list finalized and saved. T1=identity/financial/medical/work, T2=core services/social/health apps, T3=food/entertainment/misc." }),
 
@@ -54,19 +54,19 @@ export const SEED_TASKS = [
   t({ id:"t1_31", name:"Migrate: My Group Life @ Aflac", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-10", due:"2026-05-15", status:"backlog", section:"Digital Sovereignty", parentId:"p04", blockedBy:["p01"] }),
 
   // ─── Tier 2 parent + grouped sub-tasks (May) ───
-  t({ id:"p05", name:"Migrate Tier 2 accounts to SimpleLogin aliases (core services, social, health apps)", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-15", due:"2026-05-28", status:"backlog", section:"Digital Sovereignty", blockedBy:["p04"] }),
+  t({ id:"p05", name:"Migrate Tier 2 accounts to SimpleLogin aliases (core services, social, health apps)", goal:"G1", priority:"High", level:1, month:"M06", start:"2026-05-15", due:"2026-05-28", status:"backlog", section:"Digital Sovereignty", blockedBy:["p04"] }),
   t({ id:"t2_01", name:"Migrate T2: Financial — Venmo, Robinhood, Webull, Public, YNAB, Mint, Pocketguard, APMEX, Money Metals Exchange", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-15", due:"2026-05-18", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
   t({ id:"t2_02", name:"Migrate T2: Utilities — Conservice, Dominion Energy, Rocky Mountain Power, Enbridge Gas, T-Mobile, Intermountain Billpay", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-15", due:"2026-05-18", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
-  t({ id:"t2_03", name:"Migrate T2: Crypto — Gemini, Phantom Wallet, Brave Wallet, Photon, Axiom, Bullx, Banana Gun, Cielo, Sol Sniper", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-18", due:"2026-05-21", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
-  t({ id:"t2_04", name:"Migrate T2: Health apps — Marek Health, Biolife, Grifols, Everlywell, Peptide Sciences, CVS Specialty, Cronometer, EOS Fitness, Fitbod, Fitbit, FITINDEX, Elite HRV, Keto-Mojo, MyFitnessPal, Polar Flow", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-18", due:"2026-05-22", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
-  t({ id:"t2_05", name:"Migrate T2: Work & productivity — Indeed, Mega.nz, Nextcloud, Todoist, Toggl, Wrike, OneDrive Personal Vault, Make.com, Monday", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-21", due:"2026-05-24", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
-  t({ id:"t2_06", name:"Migrate T2: Social & comms — Signal, Telegram, Discord, Reddit, Snapchat, Instagram, USPS Informed Delivery, Meetup", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-21", due:"2026-05-24", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
-  t({ id:"t2_07", name:"Migrate T2: Shopping — Amazon, Walmart, eBay, Costco, iHerb, Chemyo, Swisschems, UtahGunExchange", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-24", due:"2026-05-26", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
-  t({ id:"t2_08", name:"Migrate T2: Smart home — Arlo, August, Ring-Troy, Home Assistant, Bad-Blink, Brivo, Tile Pro, Samsung-Google", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-24", due:"2026-05-26", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
-  t({ id:"t2_09", name:"Migrate T2: Entertainment — Netflix, Hulu, YouTube, Tidal, Ground News, ChatGPT, Claude, Stability AI", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-26", due:"2026-05-28", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_03", name:"Migrate T2: Crypto — Gemini, Phantom Wallet, Brave Wallet, Photon, Axiom, Bullx, Banana Gun, Cielo, Sol Sniper", goal:"G1", priority:"High", level:1, month:"M06", start:"2026-05-18", due:"2026-05-21", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_04", name:"Migrate T2: Health apps — Marek Health, Biolife, Grifols, Everlywell, Peptide Sciences, CVS Specialty, Cronometer, EOS Fitness, Fitbod, Fitbit, FITINDEX, Elite HRV, Keto-Mojo, MyFitnessPal, Polar Flow", goal:"G1", priority:"Mid", level:1, month:"M06", start:"2026-05-18", due:"2026-05-22", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_05", name:"Migrate T2: Work & productivity — Indeed, Mega.nz, Nextcloud, Todoist, Toggl, Wrike, OneDrive Personal Vault, Make.com, Monday", goal:"G1", priority:"Mid", level:1, month:"M06", start:"2026-05-21", due:"2026-05-24", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_06", name:"Migrate T2: Social & comms — Signal, Telegram, Discord, Reddit, Snapchat, Instagram, USPS Informed Delivery, Meetup", goal:"G1", priority:"Mid", level:1, month:"M06", start:"2026-05-21", due:"2026-05-24", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_07", name:"Migrate T2: Shopping — Amazon, Walmart, eBay, Costco, iHerb, Chemyo, Swisschems, UtahGunExchange", goal:"G1", priority:"Mid", level:1, month:"M06", start:"2026-05-24", due:"2026-05-26", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_08", name:"Migrate T2: Smart home — Arlo, August, Ring-Troy, Home Assistant, Bad-Blink, Brivo, Tile Pro, Samsung-Google", goal:"G1", priority:"Mid", level:1, month:"M06", start:"2026-05-24", due:"2026-05-26", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
+  t({ id:"t2_09", name:"Migrate T2: Entertainment — Netflix, Hulu, YouTube, Tidal, Ground News, ChatGPT, Claude, Stability AI", goal:"G1", priority:"Mid", level:1, month:"M06", start:"2026-05-26", due:"2026-05-28", status:"backlog", section:"Digital Sovereignty", parentId:"p05", blockedBy:["p04"] }),
 
-  t({ id:"p06", name:"Migrate Tier 3 accounts to SimpleLogin aliases (low-stakes, shopping, misc)", goal:"G1", priority:"Mid", level:1, month:"M05", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", blockedBy:["p05"] }),
-  t({ id:"p07", name:"Confirm Microsoft account fully detached — no Tier 1 accounts remaining", goal:"G1", priority:"High", level:1, month:"M05", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", milestone:true, blockedBy:["p06"] }),
+  t({ id:"p06", name:"Migrate Tier 3 accounts to SimpleLogin aliases (low-stakes, shopping, misc)", goal:"G1", priority:"Mid", level:1, month:"M06", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", blockedBy:["p05"] }),
+  t({ id:"p07", name:"Confirm Microsoft account fully detached — no Tier 1 accounts remaining", goal:"G1", priority:"High", level:1, month:"M06", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Digital Sovereignty", milestone:true, blockedBy:["p06"] }),
 
   // ═══ APRIL (#M04) — Q1 Carryovers ═══
   t({ id:"a02", name:"Start consistent athletic body training block", goal:"G3", priority:"High", level:1, month:"M04", start:"2026-04-07", due:"2026-04-07", status:"todo", section:"Q1 Carryovers", notes:"CRITICAL: longest-running incomplete task. Carried from Q1/Gamma and MS3. Single highest-leverage task in the system." }),
@@ -95,37 +95,37 @@ export const SEED_TASKS = [
   t({ id:"a21", name:"Establish rule: never microwave or heat food in plastic", goal:"G3", priority:"High", level:1, month:"M04", start:"2026-04-12", due:"2026-04-15", status:"todo", section:"Health & Body" }),
   t({ id:"a22", name:"Switch to fresh and home-cooked meals", goal:"G3", priority:"High", level:1, month:"M04", start:"2026-04-15", due:"2026-04-20", status:"todo", section:"Health & Body", notes:"Reduce ultra-processed packaged foods" }),
   t({ id:"a23", name:"Build pre and post workout nutrition protocol", goal:"G3", priority:"High", level:2, month:"M04", start:"2026-04-18", due:"2026-04-22", status:"todo", section:"Health & Body", blockedBy:["a14"], notes:"Based on keto research. Blocked by gym program selection." }),
-  t({ id:"a24", name:"Research and choose creatine and foundational supplement stack", goal:"G3", priority:"Mid", level:2, month:"M04", start:"2026-04-22", due:"2026-04-25", status:"todo", section:"Health & Body", blockedBy:["a10"], notes:"Blocked by bloodwork results" }),
+  t({ id:"a24", name:"Research and choose creatine and foundational supplement stack", goal:"G3", priority:"Mid", level:2, month:"M05", start:"2026-04-22", due:"2026-04-25", status:"todo", section:"Health & Body", blockedBy:["a10"], notes:"Blocked by bloodwork results" }),
   t({ id:"a25", name:"Eliminate canned foods — switch to fresh or glass jarred", goal:"G3", priority:"Mid", level:1, month:"M04", start:"2026-04-18", due:"2026-04-22", status:"todo", section:"Health & Body" }),
-  t({ id:"a26", name:"Switch to plastic-free tea bags or loose leaf tea", goal:"G3", priority:"Mid", level:1, month:"M04", start:"2026-04-22", due:"2026-04-25", status:"todo", section:"Health & Body" }),
-  t({ id:"a27", name:"How to measure, optimize and enhance cognition", goal:"G3", priority:"Mid", level:2, month:"M04", start:"2026-04-25", due:"2026-04-28", status:"todo", section:"Health & Body" }),
+  t({ id:"a26", name:"Switch to plastic-free tea bags or loose leaf tea", goal:"G3", priority:"Mid", level:1, month:"M05", start:"2026-04-22", due:"2026-04-25", status:"todo", section:"Health & Body" }),
+  t({ id:"a27", name:"How to measure, optimize and enhance cognition", goal:"G3", priority:"Mid", level:2, month:"M05", start:"2026-04-25", due:"2026-04-28", status:"todo", section:"Health & Body" }),
 
   // ═══ APRIL — Career & Financial ═══
   t({ id:"a28", name:"Research and choose Microsoft certification path", goal:"G4", priority:"High", level:2, month:"M04", start:"2026-04-10", due:"2026-04-12", status:"todo", section:"Career & Financial" }),
   t({ id:"a29", name:"Enroll and begin Microsoft certification Module 1", goal:"G4", priority:"High", level:2, month:"M04", start:"2026-04-15", due:"2026-04-18", status:"todo", section:"Career & Financial", blockedBy:["a28"] }),
-  t({ id:"a30", name:"Complete Microsoft certification Module 1", goal:"G4", priority:"High", level:2, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Career & Financial", blockedBy:["a29"] }),
+  t({ id:"a30", name:"Complete Microsoft certification Module 1", goal:"G4", priority:"High", level:2, month:"M05", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Career & Financial", blockedBy:["a29"] }),
   t({ id:"a31", name:"Research SAS learning resources and choose course", goal:"G4", priority:"High", level:2, month:"M04", start:"2026-04-15", due:"2026-04-18", status:"todo", section:"Career & Financial" }),
-  t({ id:"a32", name:"Complete SAS introductory module", goal:"G4", priority:"High", level:2, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Career & Financial", blockedBy:["a31"] }),
+  t({ id:"a32", name:"Complete SAS introductory module", goal:"G4", priority:"High", level:2, month:"M05", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Career & Financial", blockedBy:["a31"] }),
   t({ id:"a33", name:"Review Troy moving in / mortgage discussion", goal:"G2", priority:"High", level:2, month:"M04", start:"2026-04-10", due:"2026-04-18", status:"done", section:"Career & Financial", completed:true, completedDate:"2026-04-02" }),
   t({ id:"a34", name:"Switch banks + best money storage plan", goal:"G4", priority:"Mid", level:2, month:"M04", start:"2026-04-15", due:"2026-04-22", status:"done", section:"Career & Financial", completed:true, completedDate:"2026-04-02" }),
 
   // ═══ APRIL — Longhouse & Tribe ═══
   t({ id:"a35", name:"Define personal vetting criteria", goal:"G2", priority:"High", level:3, month:"M04", start:"2026-04-13", due:"2026-04-15", status:"todo", section:"Longhouse & Tribe", notes:"Values, traits, dealbreakers, Longhouse alignment" }),
-  t({ id:"a36", name:"Research and join one intentional dating platform or community", goal:"G2", priority:"High", level:3, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe" }),
-  t({ id:"a37", name:"Continue Phase 1 stealth incentives at next meetup + score readiness checklist", goal:"G2", priority:"High", level:3, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Longhouse & Tribe" }),
+  t({ id:"a36", name:"Research and join one intentional dating platform or community", goal:"G2", priority:"High", level:3, month:"M05", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe" }),
+  t({ id:"a37", name:"Continue Phase 1 stealth incentives at next meetup + score readiness checklist", goal:"G2", priority:"High", level:3, month:"M05", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Longhouse & Tribe" }),
 
   // ═══ APRIL — Hinge Setup ═══
-  t({ id:"a38", name:"Download Hinge and create account", goal:"G2", priority:"High", level:1, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", notes:"Platform selected based on Utah pool density and values-signal prompts" }),
-  t({ id:"a39", name:"Write profile prompt #1 — signal you are building something, not just existing", goal:"G2", priority:"High", level:2, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
-  t({ id:"a40", name:"Write profile prompt #2 — show physical standards and discipline", goal:"G2", priority:"High", level:2, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
-  t({ id:"a41", name:"Write profile prompt #3 — hint at legacy and family orientation without spelling it out", goal:"G2", priority:"High", level:2, month:"M04", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
-  t({ id:"a42", name:"Set daily rule: 10 minutes maximum per session — passive mode only", goal:"G2", priority:"Mid", level:1, month:"M04", start:"2026-04-25", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a39","a40","a41"], notes:"No premium features. No volume swiping. Screen Tier 1 criteria from profile before any contact." }),
-  t({ id:"a43", name:"First session: review matches, run conquest filter, send one meaningful opener or skip", goal:"G2", priority:"Mid", level:1, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a42"], notes:"Conquest filter: frame check, Longhouse man test, net gain test. If any answer is shaky — skip." }),
+  t({ id:"a38", name:"Download Hinge and create account", goal:"G2", priority:"High", level:1, month:"M05", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", notes:"Platform selected based on Utah pool density and values-signal prompts" }),
+  t({ id:"a39", name:"Write profile prompt #1 — signal you are building something, not just existing", goal:"G2", priority:"High", level:2, month:"M05", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
+  t({ id:"a40", name:"Write profile prompt #2 — show physical standards and discipline", goal:"G2", priority:"High", level:2, month:"M05", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
+  t({ id:"a41", name:"Write profile prompt #3 — hint at legacy and family orientation without spelling it out", goal:"G2", priority:"High", level:2, month:"M05", start:"2026-04-20", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a38"] }),
+  t({ id:"a42", name:"Set daily rule: 10 minutes maximum per session — passive mode only", goal:"G2", priority:"Mid", level:1, month:"M05", start:"2026-04-25", due:"2026-04-25", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a39","a40","a41"], notes:"No premium features. No volume swiping. Screen Tier 1 criteria from profile before any contact." }),
+  t({ id:"a43", name:"First session: review matches, run conquest filter, send one meaningful opener or skip", goal:"G2", priority:"Mid", level:1, month:"M05", start:"2026-04-25", due:"2026-04-30", status:"todo", section:"Longhouse & Tribe", parentId:"a36", blockedBy:["a42"], notes:"Conquest filter: frame check, Longhouse man test, net gain test. If any answer is shaky — skip." }),
 
   // ═══ APRIL — Mindset ═══
-  t({ id:"a44", name:"Become self-starter / break defeated mindset daily practice", goal:"G1", priority:"High", level:3, month:"M04", start:"2026-04-15", due:"2026-04-25", status:"done", section:"Mindset", completed:true, completedDate:"2026-04-02" }),
-  t({ id:"a45", name:"Are you following your Father's counsel?", goal:"G1", priority:"Mid", level:4, month:"M04", start:"2026-04-25", due:"2026-04-28", status:"backlog", section:"Mindset" }),
-  t({ id:"a46", name:"Financial iron plan fully mapped and funded", goal:"G4", priority:"High", level:2, month:"M04", start:"2026-04-25", due:"2026-04-30", status:"done", section:"Career & Financial", completed:true, completedDate:"2026-04-02" }),
+  t({ id:"a44", name:"Become self-starter / break defeated mindset daily practice", goal:"G1", priority:"High", level:3, month:"M05", start:"2026-04-15", due:"2026-04-25", status:"done", section:"Mindset", completed:true, completedDate:"2026-04-02" }),
+  t({ id:"a45", name:"Are you following your Father's counsel?", goal:"G1", priority:"Mid", level:4, month:"M05", start:"2026-04-25", due:"2026-04-28", status:"backlog", section:"Mindset" }),
+  t({ id:"a46", name:"Financial iron plan fully mapped and funded", goal:"G4", priority:"High", level:2, month:"M05", start:"2026-04-25", due:"2026-04-30", status:"done", section:"Career & Financial", completed:true, completedDate:"2026-04-02" }),
 
   // ═══ MAY (#M05) — Health & Body ═══
   t({ id:"b01", name:"What is metabolic health + treat acid reflux without antacids", goal:"G3", priority:"Mid", level:2, month:"M05", start:"2026-04-28", due:"2026-05-01", status:"backlog", section:"Health & Body" }),
@@ -133,16 +133,16 @@ export const SEED_TASKS = [
   t({ id:"b03", name:"CRP inflammation + Cortisol + Lactate measurement", goal:"G3", priority:"Mid", level:2, month:"M05", start:"2026-05-03", due:"2026-05-05", status:"backlog", section:"Health & Body" }),
   t({ id:"b04", name:"Order DNA test kit", goal:"G3", priority:"High", level:1, month:"M05", start:"2026-04-28", due:"2026-05-01", status:"backlog", section:"Health & Body" }),
   t({ id:"b05", name:"Complete and send DNA test sample", goal:"G3", priority:"High", level:1, month:"M05", start:"2026-05-01", due:"2026-05-03", status:"backlog", section:"Health & Body", blockedBy:["b04"] }),
-  t({ id:"b06", name:"Review DNA results when returned", goal:"G3", priority:"High", level:2, month:"M05", start:"2026-05-18", due:"2026-05-22", status:"backlog", section:"Health & Body", blockedBy:["b05"] }),
-  t({ id:"b07", name:"Research supplements based on DNA results", goal:"G3", priority:"High", level:2, month:"M05", start:"2026-05-22", due:"2026-05-24", status:"backlog", section:"Health & Body", blockedBy:["b06"] }),
-  t({ id:"b08", name:"Build custom supplements plan and order first batch", goal:"G3", priority:"High", level:2, month:"M05", start:"2026-05-25", due:"2026-05-28", status:"backlog", section:"Health & Body", blockedBy:["b07"] }),
-  t({ id:"b09", name:"Complete first full month gym attendance review", goal:"G3", priority:"High", level:1, month:"M05", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Health & Body", milestone:true, blockedBy:["a02"], notes:"Blocked by training block start" }),
+  t({ id:"b06", name:"Review DNA results when returned", goal:"G3", priority:"High", level:2, month:"M06", start:"2026-05-18", due:"2026-05-22", status:"backlog", section:"Health & Body", blockedBy:["b05"] }),
+  t({ id:"b07", name:"Research supplements based on DNA results", goal:"G3", priority:"High", level:2, month:"M06", start:"2026-05-22", due:"2026-05-24", status:"backlog", section:"Health & Body", blockedBy:["b06"] }),
+  t({ id:"b08", name:"Build custom supplements plan and order first batch", goal:"G3", priority:"High", level:2, month:"M06", start:"2026-05-25", due:"2026-05-28", status:"backlog", section:"Health & Body", blockedBy:["b07"] }),
+  t({ id:"b09", name:"Complete first full month gym attendance review", goal:"G3", priority:"High", level:1, month:"M06", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Health & Body", milestone:true, blockedBy:["a02"], notes:"Blocked by training block start" }),
   t({ id:"b10", name:"Audit wardrobe — identify synthetic fiber clothing", goal:"G3", priority:"Mid", level:1, month:"M05", start:"2026-05-01", due:"2026-05-03", status:"backlog", section:"Health & Body" }),
   t({ id:"b11", name:"Purchase microfiber-catching laundry bag or filter", goal:"G3", priority:"Mid", level:1, month:"M05", start:"2026-05-03", due:"2026-05-05", status:"backlog", section:"Health & Body" }),
   t({ id:"b12", name:"Replace synthetic bedding with natural fiber alternatives", goal:"G3", priority:"Mid", level:1, month:"M05", start:"2026-05-07", due:"2026-05-10", status:"backlog", section:"Health & Body" }),
   t({ id:"b13", name:"Switch household cleaners to natural alternatives", goal:"G3", priority:"Mid", level:1, month:"M05", start:"2026-05-12", due:"2026-05-15", status:"backlog", section:"Health & Body" }),
   t({ id:"b14", name:"Purchase HEPA vacuum and establish dusting routine", goal:"G3", priority:"Mid", level:1, month:"M05", start:"2026-05-17", due:"2026-05-20", status:"backlog", section:"Health & Body" }),
-  t({ id:"b15", name:"Research and purchase air purifier", goal:"G3", priority:"Mid", level:1, month:"M05", start:"2026-05-22", due:"2026-05-25", status:"backlog", section:"Health & Body" }),
+  t({ id:"b15", name:"Research and purchase air purifier", goal:"G3", priority:"Mid", level:1, month:"M06", start:"2026-05-22", due:"2026-05-25", status:"backlog", section:"Health & Body" }),
   t({ id:"b16", name:"Custom supplements for your specific body", goal:"G3", priority:"Mid", level:2, month:"M05", start:"2026-05-05", due:"2026-05-07", status:"backlog", section:"Health & Body" }),
   t({ id:"b17", name:"LDL and HDL — where should they be?", goal:"G3", priority:"Mid", level:2, month:"M05", start:"2026-05-07", due:"2026-05-10", status:"backlog", section:"Health & Body" }),
   t({ id:"b18", name:"FMT vs probiotics", goal:"G3", priority:"Mid", level:2, month:"M05", start:"2026-05-12", due:"2026-05-14", status:"backlog", section:"Health & Body" }),
@@ -156,8 +156,8 @@ export const SEED_TASKS = [
   // ═══ MAY — Longhouse & Tribe ═══
   t({ id:"b23", name:"Attend first social event with intention of meeting quality women", goal:"G2", priority:"High", level:3, month:"M05", start:"2026-05-03", due:"2026-05-07", status:"backlog", section:"Longhouse & Tribe" }),
   t({ id:"b24", name:"Begin consistent approach practice — minimum 2/week", goal:"G2", priority:"High", level:3, month:"M05", start:"2026-05-10", due:"2026-05-14", status:"backlog", section:"Longhouse & Tribe" }),
-  t({ id:"b25", name:"Sign and print the Primal Longhouse Oath", goal:"G2", priority:"High", level:4, month:"M05", start:"2026-05-25", due:"2026-05-31", status:"backlog", section:"Longhouse & Tribe" }),
-  t({ id:"b26", name:"Schedule the first elevated ritual gathering (read oath aloud)", goal:"G2", priority:"High", level:4, month:"M05", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Longhouse & Tribe", blockedBy:["b25"] }),
+  t({ id:"b25", name:"Sign and print the Primal Longhouse Oath", goal:"G2", priority:"High", level:4, month:"M06", start:"2026-05-25", due:"2026-05-31", status:"backlog", section:"Longhouse & Tribe" }),
+  t({ id:"b26", name:"Schedule the first elevated ritual gathering (read oath aloud)", goal:"G2", priority:"High", level:4, month:"M06", start:"2026-05-28", due:"2026-05-31", status:"backlog", section:"Longhouse & Tribe", blockedBy:["b25"] }),
 
   // ═══ JUNE (#M06) — Financial & Legal ═══
   t({ id:"c01", name:"Review the protective order", goal:"G2", priority:"High", level:2, month:"M06", start:"2026-06-01", due:"2026-06-03", status:"backlog", section:"Financial & Legal" }),
@@ -172,7 +172,7 @@ export const SEED_TASKS = [
   t({ id:"c08", name:"Research smart home devices compatible with setup", goal:"G2", priority:"Mid", level:2, month:"M06", start:"2026-06-08", due:"2026-06-10", status:"backlog", section:"Home & Smart Home" }),
   t({ id:"c09", name:"Choose and purchase priority smart home devices", goal:"G2", priority:"Mid", level:2, month:"M06", start:"2026-06-10", due:"2026-06-12", status:"backlog", section:"Home & Smart Home", blockedBy:["c08"] }),
   t({ id:"c10", name:"Install and configure smart home devices", goal:"G2", priority:"Mid", level:2, month:"M06", start:"2026-06-14", due:"2026-06-17", status:"backlog", section:"Home & Smart Home", blockedBy:["c09"] }),
-  t({ id:"c11", name:"Test and optimize smart home automation", goal:"G2", priority:"Mid", level:2, month:"M06", start:"2026-06-17", due:"2026-06-19", status:"backlog", section:"Home & Smart Home", blockedBy:["c10"] }),
+  t({ id:"c11", name:"Test and optimize smart home automation", goal:"G2", priority:"Mid", level:2, month:"M07", start:"2026-06-17", due:"2026-06-19", status:"backlog", section:"Home & Smart Home", blockedBy:["c10"] }),
 
   // ═══ JUNE — Microplastics ═══
   t({ id:"c12", name:"Establish single-use plastic ban in home", goal:"G3", priority:"Mid", level:1, month:"M06", start:"2026-06-03", due:"2026-06-05", status:"backlog", section:"Microplastics" }),
@@ -181,15 +181,15 @@ export const SEED_TASKS = [
   t({ id:"c15", name:"Audit bedroom and living areas — remaining plastic items", goal:"G3", priority:"Mid", level:1, month:"M06", start:"2026-06-10", due:"2026-06-12", status:"backlog", section:"Microplastics" }),
   t({ id:"c16", name:"Build complete replacement shopping list from audit", goal:"G3", priority:"Mid", level:1, month:"M06", start:"2026-06-13", due:"2026-06-15", status:"backlog", section:"Microplastics", blockedBy:["c13","c14","c15"] }),
   t({ id:"c17", name:"Replace remaining synthetic carpets or rugs with natural", goal:"G3", priority:"Mid", level:1, month:"M06", start:"2026-06-15", due:"2026-06-17", status:"backlog", section:"Microplastics" }),
-  t({ id:"c18", name:"Draft microplastics clan law", goal:"G3", priority:"Mid", level:3, month:"M06", start:"2026-06-17", due:"2026-06-20", status:"backlog", section:"Microplastics", notes:"Rules for tribe and future family" }),
-  t({ id:"c19", name:"Complete all replacements from audit list", goal:"G3", priority:"Mid", level:1, month:"M06", start:"2026-06-22", due:"2026-06-25", status:"backlog", section:"Microplastics", blockedBy:["c16"] }),
-  t({ id:"c20", name:"Full home microplastics audit — all major vectors eliminated", goal:"G3", priority:"Mid", level:1, month:"M06", start:"2026-06-27", due:"2026-06-30", status:"backlog", section:"Microplastics", milestone:true, blockedBy:["c19"] }),
+  t({ id:"c18", name:"Draft microplastics clan law", goal:"G3", priority:"Mid", level:3, month:"M07", start:"2026-06-17", due:"2026-06-20", status:"backlog", section:"Microplastics", notes:"Rules for tribe and future family" }),
+  t({ id:"c19", name:"Complete all replacements from audit list", goal:"G3", priority:"Mid", level:1, month:"M07", start:"2026-06-22", due:"2026-06-25", status:"backlog", section:"Microplastics", blockedBy:["c16"] }),
+  t({ id:"c20", name:"Full home microplastics audit — all major vectors eliminated", goal:"G3", priority:"Mid", level:1, month:"M07", start:"2026-06-27", due:"2026-06-30", status:"backlog", section:"Microplastics", milestone:true, blockedBy:["c19"] }),
 
   // ═══ JUNE — Mindset ═══
-  t({ id:"c21", name:"Become the Ultimate man — daily practice review", goal:"G1", priority:"High", level:5, month:"M06", start:"2026-06-17", due:"2026-06-20", status:"backlog", section:"Mindset" }),
-  t({ id:"c22", name:"Industry pays debts — financial discipline review", goal:"G1", priority:"Mid", level:4, month:"M06", start:"2026-06-22", due:"2026-06-25", status:"backlog", section:"Mindset" }),
-  t({ id:"c23", name:"Diligence is the mother of good luck — habit audit", goal:"G1", priority:"Mid", level:4, month:"M06", start:"2026-06-25", due:"2026-06-27", status:"backlog", section:"Mindset" }),
-  t({ id:"c24", name:"Make a list of ends — life priorities audit", goal:"G1", priority:"Mid", level:5, month:"M06", start:"2026-06-27", due:"2026-06-30", status:"backlog", section:"Mindset" }),
+  t({ id:"c21", name:"Become the Ultimate man — daily practice review", goal:"G1", priority:"High", level:5, month:"M07", start:"2026-06-17", due:"2026-06-20", status:"backlog", section:"Mindset" }),
+  t({ id:"c22", name:"Industry pays debts — financial discipline review", goal:"G1", priority:"Mid", level:4, month:"M07", start:"2026-06-22", due:"2026-06-25", status:"backlog", section:"Mindset" }),
+  t({ id:"c23", name:"Diligence is the mother of good luck — habit audit", goal:"G1", priority:"Mid", level:4, month:"M07", start:"2026-06-25", due:"2026-06-27", status:"backlog", section:"Mindset" }),
+  t({ id:"c24", name:"Make a list of ends — life priorities audit", goal:"G1", priority:"Mid", level:5, month:"M07", start:"2026-06-27", due:"2026-06-30", status:"backlog", section:"Mindset" }),
 
   // ═══ JULY (#M07) ═══
   t({ id:"d01", name:"Athletic body — formal assessment vs April baseline", goal:"G3", priority:"High", level:1, month:"M07", start:"2026-07-01", due:"2026-07-02", status:"backlog", section:"Assessment", milestone:true, blockedBy:["a02","b09"], notes:"Strength, measurements, photos" }),
@@ -222,15 +222,15 @@ const m = (o) => ({
 
 export const SEED_MILESTONES = [
   // ═══ MARCH 2026 (#MS3) — historical, retained for context ═══
-  m({ id:"ms3_02", name:"Start consistent athletic body training block", goal:"G3", month:"M03", due:"2026-03-31", msTag:"MS3", msWeek:"MSW13", taskIds:["a02"], notes:"⚠ Carryover into Delta — single highest-leverage open task in the system." }),
-  m({ id:"ms3_03", name:"Review & update emergency fund / financial iron plan", goal:"G4", month:"M03", due:"2026-03-31", msTag:"MS3", msWeek:"MSW13", taskIds:["a46"], completed:true, completedDate:"2026-04-02" }),
+  m({ id:"ms3_02", name:"Start consistent athletic body training block", goal:"G3", month:"M04", due:"2026-04-07", msTag:"MS4", msWeek:"MSW15", taskIds:["a02"], notes:"⚠ Carryover into Delta — single highest-leverage open task in the system." }),
+  m({ id:"ms3_03", name:"Review & update emergency fund / financial iron plan", goal:"G4", month:"M04", due:"2026-03-31", msTag:"MS3", msWeek:"MSW13", taskIds:["a46"], completed:true, completedDate:"2026-04-02" }),
 
   // ═══ APRIL 2026 (#MS4) — Delta ═══
   m({ id:"ms4_01", name:"Eatwild.com + localharvest.com research for real food sources", goal:"G3", month:"M04", due:"2026-04-05", msTag:"MS4", msWeek:"MSW14", taskIds:["a13"], completed:true, completedDate:"2026-04-02" }),
   m({ id:"ms4_02", name:"Microplastics avoidance plan + water filter in place", goal:"G3", month:"M04", due:"2026-04-08", msTag:"MS4", msWeek:"MSW14", taskIds:["a12"], completed:true, completedDate:"2026-04-08" }),
   m({ id:"ms4_03", name:"Body composition baseline logged", goal:"G3", month:"M04", due:"2026-04-05", msTag:"MS4", msWeek:"MSW14", taskIds:["a09"] }),
   m({ id:"ms4_04", name:"Habit tracker fully configured with all core habits", goal:"G1", month:"M04", due:"2026-04-05", msTag:"MS4", msWeek:"MSW14", taskIds:["a05","a06","a07","a08"] }),
-  m({ id:"ms4_05", name:"Kitchen plastic audit started", goal:"G3", month:"M04", due:"2026-04-05", msTag:"MS4", msWeek:"MSW14", taskIds:["a20"] }),
+  m({ id:"ms4_05", name:"Kitchen plastic audit started", goal:"G3", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW14", taskIds:["a20"] }),
   m({ id:"ms4_06", name:"Schedule and complete blood draw + EKG once doctor approves order", goal:"G3", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW15", taskIds:["a10"] }),
   m({ id:"ms4_07", name:"InsideTracker EKG + glucose wearable setup", goal:"G3", month:"M04", due:"2026-04-12", msTag:"MS4", msWeek:"MSW15", taskIds:["a11"], completed:true, completedDate:"2026-04-08" }),
   m({ id:"ms4_08", name:"Structured gym training program chosen and in use", goal:"G3", month:"M04", due:"2026-04-12", msTag:"MS4", msWeek:"MSW15", taskIds:["a14"] }),
@@ -238,43 +238,43 @@ export const SEED_MILESTONES = [
   m({ id:"ms4_10", name:"Replace all plastic food containers with glass or stainless steel", goal:"G3", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW15", taskIds:["a18"] }),
   m({ id:"ms4_11", name:"Replace plastic cutting boards and spatulas with wood or bamboo", goal:"G3", month:"M04", due:"2026-04-12", msTag:"MS4", msWeek:"MSW15", taskIds:["a19"] }),
   m({ id:"ms4_12", name:"Sleep optimization protocol established", goal:"G3", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW16", taskIds:["a15","a16"] }),
-  m({ id:"ms4_13", name:"SAS learning started", goal:"G4", month:"M04", due:"2026-04-18", msTag:"MS4", msWeek:"MSW16", taskIds:["a31","a32"] }),
+  m({ id:"ms4_13", name:"SAS learning started", goal:"G4", month:"M05", due:"2026-04-25", msTag:"MS4", msWeek:"MSW16", taskIds:["a31","a32"] }),
   m({ id:"ms4_14", name:"Review Troy moving in / mortgage discussion", goal:"G2", month:"M04", due:"2026-04-18", msTag:"MS4", msWeek:"MSW16", taskIds:["a33"], completed:true, completedDate:"2026-04-02" }),
   m({ id:"ms4_15", name:"Switch to fresh and home-cooked meals — reduce ultra-processed", goal:"G3", month:"M04", due:"2026-04-20", msTag:"MS4", msWeek:"MSW16", taskIds:["a22"] }),
   m({ id:"ms4_16", name:"Personal vetting criteria defined for wife-seeking", goal:"G2", month:"M04", due:"2026-04-15", msTag:"MS4", msWeek:"MSW16", taskIds:["a35"] }),
   m({ id:"ms4_17", name:"Pre and post workout nutrition protocol built", goal:"G3", month:"M04", due:"2026-04-22", msTag:"MS4", msWeek:"MSW17", taskIds:["a23"] }),
-  m({ id:"ms4_18", name:"Continue Phase 1 stealth incentives at next meetup + score 7-item readiness checklist", goal:"G2", month:"M04", due:"2026-04-30", msTag:"MS4", msWeek:"MSW17", taskIds:["a37"] }),
-  m({ id:"ms4_19", name:"Dating platform or community joined", goal:"G2", month:"M04", due:"2026-04-25", msTag:"MS4", msWeek:"MSW17", taskIds:["a36","a38"] }),
-  m({ id:"ms4_20", name:"Become self-starter / break defeated mindset daily practice started", goal:"G1", month:"M04", due:"2026-04-25", msTag:"MS4", msWeek:"MSW17", taskIds:["a44"], completed:true, completedDate:"2026-04-02" }),
-  m({ id:"ms4_21", name:"Financial iron plan fully mapped and funded", goal:"G4", month:"M04", due:"2026-04-30", msTag:"MS4", msWeek:"MSW17", taskIds:["a46"], completed:true, completedDate:"2026-04-02" }),
+  m({ id:"ms4_18", name:"Continue Phase 1 stealth incentives at next meetup + score 7-item readiness checklist", goal:"G2", month:"M05", due:"2026-04-30", msTag:"MS4", msWeek:"MSW17", taskIds:["a37"] }),
+  m({ id:"ms4_19", name:"Dating platform or community joined", goal:"G2", month:"M05", due:"2026-04-25", msTag:"MS4", msWeek:"MSW17", taskIds:["a36","a38"] }),
+  m({ id:"ms4_20", name:"Become self-starter / break defeated mindset daily practice started", goal:"G1", month:"M05", due:"2026-04-25", msTag:"MS4", msWeek:"MSW17", taskIds:["a44"], completed:true, completedDate:"2026-04-02" }),
+  m({ id:"ms4_21", name:"Financial iron plan fully mapped and funded", goal:"G4", month:"M05", due:"2026-04-30", msTag:"MS4", msWeek:"MSW17", taskIds:["a46"], completed:true, completedDate:"2026-04-02" }),
 
   // ═══ MAY 2026 (#MS5) — Epsilon ═══
   m({ id:"ms5_01", name:"Blood draw + EKG results reviewed and actioned", goal:"G3", month:"M05", due:"2026-05-07", msTag:"MS5", msWeek:"MSW18", taskIds:["a10"] }),
   m({ id:"ms5_02", name:"DNA test kit ordered and sample sent", goal:"G3", month:"M05", due:"2026-05-03", msTag:"MS5", msWeek:"MSW18", taskIds:["b04","b05"] }),
-  m({ id:"ms5_03", name:"Metabolic health re-test completed", goal:"G3", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW19", taskIds:["b01","b03"] }),
+  m({ id:"ms5_03", name:"Metabolic health re-test completed", goal:"G3", month:"M06", due:"2026-05-31", msTag:"MS5", msWeek:"MSW19", taskIds:["b01","b03"] }),
   m({ id:"ms5_04", name:"Keto meat nutrient mapping finished", goal:"G3", month:"M05", due:"2026-05-18", msTag:"MS5", msWeek:"MSW20", taskIds:["b19","b20"] }),
-  m({ id:"ms5_05", name:"Custom supplements plan built and ordered", goal:"G3", month:"M05", due:"2026-05-28", msTag:"MS5", msWeek:"MSW20", taskIds:["b06","b07","b08"] }),
-  m({ id:"ms5_06", name:"Emergency fund at 75% target", goal:"G4", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:[], notes:"Manual checkpoint — track via banking review. No discrete task." }),
-  m({ id:"ms5_07", name:"Kitchen fully converted to plastic-free storage, cooking, and prep", goal:"G3", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:["a18","a19","a20","a25","a26","c12","c13"] }),
-  m({ id:"ms5_08", name:"Home fiber environment converted to natural materials", goal:"G3", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:["b10","b11","b12"] }),
+  m({ id:"ms5_05", name:"Custom supplements plan built and ordered", goal:"G3", month:"M06", due:"2026-05-28", msTag:"MS5", msWeek:"MSW20", taskIds:["b06","b07","b08"] }),
+  m({ id:"ms5_06", name:"Emergency fund at 75% target", goal:"G4", month:"M06", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:[], notes:"Manual checkpoint — track via banking review. No discrete task." }),
+  m({ id:"ms5_07", name:"Kitchen fully converted to plastic-free storage, cooking, and prep", goal:"G3", month:"M06", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:["a18","a19","a20","a25","a26"] }),
+  m({ id:"ms5_08", name:"Home fiber environment converted to natural materials", goal:"G3", month:"M06", due:"2026-05-31", msTag:"MS5", msWeek:"MSW21", taskIds:["b10","b11","b12"] }),
   m({ id:"ms5_09", name:"Purchase HEPA vacuum and establish regular dusting routine", goal:"G3", month:"M05", due:"2026-05-20", msTag:"MS5", msWeek:"MSW20", taskIds:["b14"] }),
-  m({ id:"ms5_10", name:"Research and purchase air purifier", goal:"G3", month:"M05", due:"2026-05-25", msTag:"MS5", msWeek:"MSW21", taskIds:["b15"] }),
-  m({ id:"ms5_11", name:"Sign and print the Primal Longhouse Oath — bring to next meetup", goal:"G2", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b25"] }),
-  m({ id:"ms5_12", name:"Schedule the first elevated ritual gathering (read oath aloud)", goal:"G2", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b26"] }),
-  m({ id:"ms5_13", name:"Consistent approach practice established — minimum 2 per week", goal:"G2", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b23","b24"] }),
-  m({ id:"ms5_14", name:"Complete first full month gym attendance review", goal:"G3", month:"M05", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b09"] }),
+  m({ id:"ms5_10", name:"Research and purchase air purifier", goal:"G3", month:"M06", due:"2026-05-25", msTag:"MS5", msWeek:"MSW21", taskIds:["b15"] }),
+  m({ id:"ms5_11", name:"Sign and print the Primal Longhouse Oath — bring to next meetup", goal:"G2", month:"M06", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b25"] }),
+  m({ id:"ms5_12", name:"Schedule the first elevated ritual gathering (read oath aloud)", goal:"G2", month:"M06", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b26"] }),
+  m({ id:"ms5_13", name:"Consistent approach practice established — minimum 2 per week", goal:"G2", month:"M06", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b23","b24"] }),
+  m({ id:"ms5_14", name:"Complete first full month gym attendance review", goal:"G3", month:"M06", due:"2026-05-31", msTag:"MS5", msWeek:"MSW22", taskIds:["b09"] }),
 
   // ═══ JUNE 2026 (#MS6) — Zeta ═══
-  m({ id:"ms6_01", name:"Tribe at 4–6 members with vetting process started", goal:"G2", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:[], notes:"Aggregate tribal milestone — manual checkpoint scored at meetup." }),
-  m({ id:"ms6_02", name:"Troy moving in confirmed or decision made", goal:"G2", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c03","c04"] }),
+  m({ id:"ms6_01", name:"Tribe at 4–6 members with vetting process started", goal:"G2", month:"M07", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:[], notes:"Aggregate tribal milestone — manual checkpoint scored at meetup." }),
+  m({ id:"ms6_02", name:"Troy moving in confirmed or decision made", goal:"G2", month:"M07", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c03","c04"] }),
   m({ id:"ms6_03", name:"Protective order reviewed and enforcement steps taken", goal:"G2", month:"M06", due:"2026-06-05", msTag:"MS6", msWeek:"MSW23", taskIds:["c01","c02"] }),
-  m({ id:"ms6_04", name:"Bank switch completed + best money storage plan active", goal:"G4", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c05","c06","c07"] }),
-  m({ id:"ms6_05", name:"Smart home fully installed and optimized", goal:"G2", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c08","c09","c10","c11"] }),
-  m({ id:"ms6_06", name:"Full home microplastics audit completed — all major vectors controlled", goal:"G3", month:"M06", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c13","c14","c15","c16","c17","c19","c20"] }),
-  m({ id:"ms6_07", name:"Microplastics clan law drafted", goal:"G3", month:"M06", due:"2026-06-20", msTag:"MS6", msWeek:"MSW25", taskIds:["c18"] }),
+  m({ id:"ms6_04", name:"Bank switch completed + best money storage plan active", goal:"G4", month:"M07", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c05","c06","c07"] }),
+  m({ id:"ms6_05", name:"Smart home fully installed and optimized", goal:"G2", month:"M07", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c08","c09","c10","c11"] }),
+  m({ id:"ms6_06", name:"Full home microplastics audit completed — all major vectors controlled", goal:"G3", month:"M07", due:"2026-06-30", msTag:"MS6", msWeek:"MSW26", taskIds:["c12","c13","c14","c15","c16","c17","c19","c20"] }),
+  m({ id:"ms6_07", name:"Microplastics clan law drafted", goal:"G3", month:"M07", due:"2026-06-20", msTag:"MS6", msWeek:"MSW25", taskIds:["c18"] }),
 
   // ═══ JULY 2026 (#MS7) — Eta ═══
-  m({ id:"ms7_01", name:"Athletic body training block — first formal assessment completed", goal:"G3", month:"M07", due:"2026-07-31", msTag:"MS7", msWeek:"MSW30", taskIds:["d01"] }),
+  m({ id:"ms7_01", name:"Athletic body training block — first formal assessment completed", goal:"G3", month:"M08", due:"2026-07-31", msTag:"MS7", msWeek:"MSW30", taskIds:["d01"] }),
   m({ id:"ms7_02", name:"Cognition baseline test completed", goal:"G3", month:"M07", due:"2026-07-05", msTag:"MS7", msWeek:"MSW27", taskIds:["d02"] }),
   m({ id:"ms7_03", name:"Nutrition standard defined and being followed", goal:"G3", month:"M07", due:"2026-07-15", msTag:"MS7", msWeek:"MSW29", taskIds:["d03"] }),
 ];
