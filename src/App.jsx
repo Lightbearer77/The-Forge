@@ -26,6 +26,21 @@ const todayStr = () => new Date().toISOString().split("T")[0];
 const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
 const addDays = (d, n) => { const x = new Date(d + "T00:00:00"); x.setDate(x.getDate() + n); return x.toISOString().split("T")[0]; };
 
+// ─── Greek Month Normalization ───
+// Recomputes `month` from `due` date so imported/synced data
+// always aligns with the Greek calendar regardless of source tagging.
+const normalizeTaskMonths = (tasks) => tasks.map(t => {
+  if (!t.due || !t.month) return t;
+  const correct = getGreekMonth(new Date(t.due + "T12:00:00"));
+  return correct !== t.month ? { ...t, month: correct } : t;
+});
+
+const normalizeMilestoneMonths = (milestones) => milestones.map(ms => {
+  if (!ms.due || !ms.month) return ms;
+  const correct = getGreekMonth(new Date(ms.due + "T12:00:00"));
+  return correct !== ms.month ? { ...ms, month: correct } : ms;
+});
+
 const getNextDue = (rec, due) => {
   if (!due || rec === "none") return null;
   const map = { daily: 1, weekly: 7, biweekly: 14, monthly: 28 };
@@ -1728,11 +1743,13 @@ export default function ForgeApp() {
 
   useEffect(() => {
     const saved = loadTasks();
-    setTasks(saved && saved.length > 0 ? saved : SEED_TASKS);
+    const rawTasks = saved && saved.length > 0 ? saved : SEED_TASKS;
+    setTasks(normalizeTaskMonths(rawTasks));
     setHistory(loadHistory() || []);
     setActivity(loadActivity());
     const savedMs = loadMilestones();
-    setMilestones(savedMs && savedMs.length > 0 ? savedMs : SEED_MILESTONES);
+    const rawMs = savedMs && savedMs.length > 0 ? savedMs : SEED_MILESTONES;
+    setMilestones(normalizeMilestoneMonths(rawMs));
     setLoaded(true);
   }, []);
 
@@ -1927,10 +1944,10 @@ export default function ForgeApp() {
     inp.onchange = async (e) => {
       try {
         const data = await importJSON(e.target.files[0]);
-        if (data.tasks) { setTasks(data.tasks); saveTasks(data.tasks); }
+        if (data.tasks) { const t = normalizeTaskMonths(data.tasks); setTasks(t); saveTasks(t); }
         if (data.history) { setHistory(data.history); saveHistory(data.history); }
         if (data.activity) { setActivity(data.activity); saveActivity(data.activity); }
-        if (data.milestones) { setMilestones(data.milestones); saveMilestones(data.milestones); }
+        if (data.milestones) { const m = normalizeMilestoneMonths(data.milestones); setMilestones(m); saveMilestones(m); }
         alert("Import successful!");
       } catch (err) { alert("Import failed: " + err.message); }
     };
@@ -2212,10 +2229,10 @@ export default function ForgeApp() {
       {/* Sync Modal */}
       {showSync && <SyncModal tasks={tasks} history={history} activity={activity} milestones={milestones}
         onApply={(data) => {
-          if (data.tasks) { setTasks(data.tasks); saveTasks(data.tasks); }
+          if (data.tasks) { const t = normalizeTaskMonths(data.tasks); setTasks(t); saveTasks(t); }
           if (data.history) { setHistory(data.history); saveHistory(data.history); }
           if (data.activity) { setActivity(data.activity); saveActivity(data.activity); }
-          if (data.milestones) { setMilestones(data.milestones); saveMilestones(data.milestones); }
+          if (data.milestones) { const m = normalizeMilestoneMonths(data.milestones); setMilestones(m); saveMilestones(m); }
         }}
         onClose={() => setShowSync(false)} />}
 
