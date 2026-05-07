@@ -5,9 +5,8 @@ import { SEED_TASKS, SEED_MILESTONES } from "./seed.js";
 import SovereigntyCalendar from './components/SovereigntyCalendar';
 
 // ═══════════════════════════════════════════
-// THE FORGE v6.2 — Due-today green · Merge Import · Milestones
-// Batch · Sync · Timeline · MPL Import · Dependencies · AI Panel
-// Recurring Tasks · Obsidian Export · Completion History
+// THE FORGE v6.3 — Active-window green · Due-today amber · Merge Import
+// Milestones · Batch · Sync · Timeline · MPL Import · Dependencies · AI
 // ═══════════════════════════════════════════
 
 // ─── Mobile Detection ───
@@ -25,7 +24,9 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const todayStr = () => new Date().toISOString().split("T")[0];
 
 // Date-status helper for due-date coloring.
-// Returns one of: "overdue" | "today" | "future" | "none"
+// Returns one of: "overdue" | "today" | "active" | "future" | "none"
+// "active" = inside [start, due] window but not yet due today (mid-execution)
+// "today"  = due today specifically — final-day priority
 // Always treats completed tasks as "none" so completion styling wins.
 const dueStatus = (task) => {
   if (!task || !task.due) return "none";
@@ -33,11 +34,14 @@ const dueStatus = (task) => {
   const today = todayStr();
   if (task.due < today) return "overdue";
   if (task.due === today) return "today";
+  // due is in the future — check if we're inside the start window
+  if (task.start && task.start <= today) return "active";
   return "future";
 };
 const DUE_COLORS = {
   overdue: "#E8453C",
-  today:   "#6FB87C",
+  today:   "#D4A84B", // amber/yellow — final-day priority
+  active:  "#6FB87C", // green — currently in execution window
   future:  "rgba(255,255,255,0.35)",
   none:    "rgba(255,255,255,0.35)",
 };
@@ -526,10 +530,13 @@ const KanbanCol = ({ status, tasks, allTasks, onDrop, onToggle, onSelect, select
               <Pill bg={`${PRIORITIES[task.priority]}22`} color={PRIORITIES[task.priority]}>{task.priority}</Pill>
               {task.due && (() => {
                 const ds = dueStatus(task);
-                return <Pill
-                  bg={ds === "overdue" ? "rgba(232,69,60,0.15)" : ds === "today" ? "rgba(111,184,124,0.15)" : undefined}
-                  color={ds === "overdue" ? "#E8453C" : ds === "today" ? "#6FB87C" : undefined}
-                >{fmtDate(task.due)}</Pill>;
+                const tints = {
+                  overdue: { bg: "rgba(232,69,60,0.15)",  fg: DUE_COLORS.overdue },
+                  today:   { bg: "rgba(212,168,75,0.15)", fg: DUE_COLORS.today },
+                  active:  { bg: "rgba(111,184,124,0.15)", fg: DUE_COLORS.active },
+                };
+                const t = tints[ds];
+                return <Pill bg={t?.bg} color={t?.fg}>{fmtDate(task.due)}</Pill>;
               })()}
             </div>
           </div>
@@ -554,7 +561,7 @@ const WeekFocusView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMobi
 
   const sections = [
     { key: "overdue", title: "⚠️ OVERDUE", tasks: overdue, color: "#E8453C", bg: "rgba(232,69,60,0.06)", border: "rgba(232,69,60,0.15)" },
-    { key: "today", title: "📌 TODAY", tasks: todayTasks, color: "#6FB87C", bg: "rgba(111,184,124,0.06)", border: "rgba(111,184,124,0.18)" },
+    { key: "today", title: "📌 TODAY", tasks: todayTasks, color: "#D4A84B", bg: "rgba(212,168,75,0.06)", border: "rgba(212,168,75,0.18)" },
     { key: "tomorrow", title: "→ TOMORROW", tasks: tomorrowTasks, color: "#D4A84B", bg: "transparent", border: "rgba(255,255,255,0.06)" },
     { key: "week", title: "THIS WEEK", tasks: restOfWeek, color: "rgba(255,255,255,0.5)", bg: "transparent", border: "rgba(255,255,255,0.06)" },
   ];
@@ -961,8 +968,17 @@ const TimelineView = ({ tasks, onSelect, selectedId, isMobile }) => {
               }}>
                 <div style={{
                   position: "absolute", left: `${left}%`, width: `${width}%`, top: 2, height: 18,
-                  background: task.completed ? "rgba(91,138,114,0.3)" : ds === "overdue" ? "rgba(232,69,60,0.3)" : ds === "today" ? "rgba(111,184,124,0.3)" : `${GOALS[goal]?.color}33`,
-                  border: `1px solid ${task.completed ? "rgba(91,138,114,0.5)" : ds === "overdue" ? "rgba(232,69,60,0.5)" : ds === "today" ? "rgba(111,184,124,0.6)" : GOALS[goal]?.color + "66"}`,
+                  background: task.completed ? "rgba(91,138,114,0.3)"
+                    : ds === "overdue" ? "rgba(232,69,60,0.3)"
+                    : ds === "today"   ? "rgba(212,168,75,0.3)"
+                    : ds === "active"  ? "rgba(111,184,124,0.3)"
+                    : `${GOALS[goal]?.color}33`,
+                  border: `1px solid ${
+                    task.completed ? "rgba(91,138,114,0.5)"
+                    : ds === "overdue" ? "rgba(232,69,60,0.5)"
+                    : ds === "today"   ? "rgba(212,168,75,0.6)"
+                    : ds === "active"  ? "rgba(111,184,124,0.6)"
+                    : GOALS[goal]?.color + "66"}`,
                   borderRadius: 3, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden",
                   outline: selectedId === task.id ? "2px solid rgba(201,168,76,0.5)" : "none",
                   opacity: task.completed ? 0.5 : 1,
@@ -1447,8 +1463,8 @@ const MilestoneRow = ({ milestone, allTasks, onToggle, onSelect, selectedId, isM
             <Pill bg={`${goalColor}22`} color={goalColor}>{goalIcon} {milestone.goal}</Pill>
             {milestone.msTag && <Pill>{milestone.msTag}{milestone.msWeek ? ` · ${milestone.msWeek}` : ""}</Pill>}
             {milestone.due && <Pill
-              bg={msState === "overdue" ? "rgba(232,69,60,0.15)" : msState === "today" ? "rgba(111,184,124,0.15)" : undefined}
-              color={msState === "overdue" ? "#E8453C" : msState === "today" ? "#6FB87C" : undefined}
+              bg={msState === "overdue" ? "rgba(232,69,60,0.15)" : msState === "today" ? "rgba(212,168,75,0.15)" : undefined}
+              color={msState === "overdue" ? "#E8453C" : msState === "today" ? "#D4A84B" : undefined}
             >📅 {fmtDate(milestone.due)}</Pill>}
             {linked.length > 0 && <Pill bg="rgba(201,168,76,0.1)" color="#C9A84C">{linkedDone}/{linked.length} tasks</Pill>}
             {linked.length === 0 && <Pill bg="rgba(75,75,75,0.3)" color="rgba(255,255,255,0.4)">manual</Pill>}
@@ -1570,7 +1586,7 @@ const MilestonesCard = ({ milestones, allTasks, isMobile, onSelect }) => {
               <span style={{ color: "#e5e5e5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                 <span style={{ color: goalColor, marginRight: 4 }}>{GOALS[ms.goal]?.icon}</span>{ms.name}
               </span>
-              <span style={{ color: cardState === "overdue" ? "#E8453C" : cardState === "today" ? "#6FB87C" : "rgba(255,255,255,0.4)", flexShrink: 0, fontSize: 10, fontWeight: 600 }}>
+              <span style={{ color: cardState === "overdue" ? "#E8453C" : cardState === "today" ? "#D4A84B" : "rgba(255,255,255,0.4)", flexShrink: 0, fontSize: 10, fontWeight: 600 }}>
                 {linked.length > 0 ? `${linkedDone}/${linked.length}` : "—"} · {pct}%
               </span>
             </div>
