@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek, getWeekBounds } from "./constants.js";
-import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, loadMilestones, saveMilestones, exportJSON, importJSON, generateSyncCode, applySyncCode } from "./storage.js";
+import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, loadMilestones, saveMilestones, exportJSON, importJSON, generateSyncCode, applySyncCode, mergeCollections, computeMergePreview } from "./storage.js";
 import { SEED_TASKS, SEED_MILESTONES } from "./seed.js";
 import SovereigntyCalendar from './components/SovereigntyCalendar';
 
 // ═══════════════════════════════════════════
-// THE FORGE v6.0 — Milestones · Batch · Sync · Timeline · MPL Import
-// Dependencies · AI Panel · Recurring Tasks
+// THE FORGE v6.1 — Merge Import · Milestones · Batch · Sync · Timeline
+// MPL Import · Dependencies · AI Panel · Recurring Tasks
 // Obsidian Export · Completion History
 // ═══════════════════════════════════════════
 
@@ -1549,6 +1549,205 @@ const MilestonesCard = ({ milestones, allTasks, isMobile, onSelect }) => {
   );
 };
 
+// ─── Merge Import Modal ───
+// Shows a preview of incoming changes and lets user pick a merge mode
+// before committing. Used by both file import and "Import Latest Seed."
+const MergeImportModal = ({ incomingTasks, incomingMilestones, sourceLabel, localTasks, localMilestones, onApply, onClose }) => {
+  const [mode, setMode] = useState("keep-import");
+  const [showDetails, setShowDetails] = useState(false);
+
+  const preview = useMemo(
+    () => computeMergePreview(localTasks, localMilestones, incomingTasks, incomingMilestones),
+    [localTasks, localMilestones, incomingTasks, incomingMilestones]
+  );
+
+  const handleApply = () => {
+    onApply(mode);
+    onClose();
+  };
+
+  const ModeOption = ({ value, title, sub, danger }) => (
+    <label
+      onClick={() => setMode(value)}
+      style={{
+        display: "block", padding: 12, borderRadius: 8, marginBottom: 8, cursor: "pointer",
+        border: `1px solid ${mode === value ? (danger ? "rgba(232,69,60,0.4)" : "rgba(201,168,76,0.4)") : "rgba(255,255,255,0.08)"}`,
+        background: mode === value ? (danger ? "rgba(232,69,60,0.06)" : "rgba(201,168,76,0.06)") : "rgba(255,255,255,0.02)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <input type="radio" checked={mode === value} onChange={() => setMode(value)} style={{ marginTop: 3 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: danger ? "#E8453C" : "#e5e5e5", marginBottom: 3 }}>{title}</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.4 }}>{sub}</div>
+        </div>
+      </div>
+    </label>
+  );
+
+  const StatLine = ({ label, value, color = "#e5e5e5" }) => (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 11 }}>
+      <span style={{ color: "rgba(255,255,255,0.5)" }}>{label}</span>
+      <span style={{ color, fontWeight: 600 }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: "#1a1a1a", borderRadius: 10, padding: 20, width: "min(620px, 95vw)",
+        maxHeight: "92vh", overflowY: "auto", border: "1px solid rgba(255,255,255,0.1)",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#C9A84C" }}>📥 Merge Import</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 18 }}>✕</button>
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 16 }}>
+          Source: <span style={{ color: "#C9A84C" }}>{sourceLabel}</span>
+        </div>
+
+        {/* Preview block */}
+        <div style={{
+          background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 12, marginBottom: 16,
+          border: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+            What's in the import
+          </div>
+
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#e5e5e5", marginBottom: 4 }}>📋 Tasks</div>
+            <StatLine label="New (will be added)" value={`+${preview.tasks.newCount}`} color="#5B8A72" />
+            <StatLine label="Changed (collision with edits)" value={preview.tasks.changedCount} color={preview.tasks.changedCount > 0 ? "#D4A84B" : "#888"} />
+            <StatLine label="Unchanged collisions" value={preview.tasks.unchangedCollisionCount} />
+            <StatLine label="Your local-only tasks" value={preview.tasks.localOnlyCount} color="#888" />
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#e5e5e5", marginBottom: 4 }}>🎯 Milestones</div>
+            <StatLine label="New (will be added)" value={`+${preview.milestones.newCount}`} color="#5B8A72" />
+            <StatLine label="Changed (collision with edits)" value={preview.milestones.changedCount} color={preview.milestones.changedCount > 0 ? "#D4A84B" : "#888"} />
+            <StatLine label="Unchanged collisions" value={preview.milestones.unchangedCollisionCount} />
+            <StatLine label="Your local-only milestones" value={preview.milestones.localOnlyCount} color="#888" />
+          </div>
+
+          {(preview.tasks.changedSamples.length > 0 || preview.milestones.changedSamples.length > 0 || preview.tasks.newSamples.length > 0 || preview.milestones.newSamples.length > 0) && (
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              style={{
+                marginTop: 10, padding: "5px 10px", fontSize: 10, borderRadius: 5,
+                background: "rgba(201,168,76,0.1)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.2)",
+                cursor: "pointer", fontWeight: 600,
+              }}
+            >
+              {showDetails ? "▼ Hide details" : "▶ Show details"}
+            </button>
+          )}
+
+          {showDetails && (
+            <div style={{ marginTop: 10, padding: 8, background: "rgba(0,0,0,0.3)", borderRadius: 6, fontSize: 10 }}>
+              {preview.tasks.newSamples.length > 0 && (
+                <>
+                  <div style={{ color: "#5B8A72", fontWeight: 600, marginBottom: 4 }}>New tasks (sample):</div>
+                  {preview.tasks.newSamples.map(t => (
+                    <div key={t.id} style={{ color: "rgba(255,255,255,0.6)", padding: "2px 0" }}>
+                      <span style={{ color: "#5B8A72" }}>+</span> <code style={{ color: "#C9A84C" }}>{t.id}</code> {t.name}
+                    </div>
+                  ))}
+                  {preview.tasks.newCount > preview.tasks.newSamples.length && (
+                    <div style={{ color: "rgba(255,255,255,0.3)", padding: "2px 0" }}>… and {preview.tasks.newCount - preview.tasks.newSamples.length} more</div>
+                  )}
+                </>
+              )}
+              {preview.tasks.changedSamples.length > 0 && (
+                <>
+                  <div style={{ color: "#D4A84B", fontWeight: 600, marginTop: 8, marginBottom: 4 }}>Changed tasks (sample):</div>
+                  {preview.tasks.changedSamples.map(t => (
+                    <div key={t.id} style={{ color: "rgba(255,255,255,0.6)", padding: "2px 0" }}>
+                      <span style={{ color: "#D4A84B" }}>~</span> <code style={{ color: "#C9A84C" }}>{t.id}</code> {t.name}
+                      <div style={{ color: "rgba(255,255,255,0.4)", paddingLeft: 16, fontSize: 9 }}>fields: {t.diffs.join(", ")}</div>
+                    </div>
+                  ))}
+                  {preview.tasks.changedCount > preview.tasks.changedSamples.length && (
+                    <div style={{ color: "rgba(255,255,255,0.3)", padding: "2px 0" }}>… and {preview.tasks.changedCount - preview.tasks.changedSamples.length} more</div>
+                  )}
+                </>
+              )}
+              {preview.milestones.newSamples.length > 0 && (
+                <>
+                  <div style={{ color: "#5B8A72", fontWeight: 600, marginTop: 8, marginBottom: 4 }}>New milestones (sample):</div>
+                  {preview.milestones.newSamples.map(m => (
+                    <div key={m.id} style={{ color: "rgba(255,255,255,0.6)", padding: "2px 0" }}>
+                      <span style={{ color: "#5B8A72" }}>+</span> <code style={{ color: "#C9A84C" }}>{m.id}</code> {m.name}
+                    </div>
+                  ))}
+                </>
+              )}
+              {preview.milestones.changedSamples.length > 0 && (
+                <>
+                  <div style={{ color: "#D4A84B", fontWeight: 600, marginTop: 8, marginBottom: 4 }}>Changed milestones (sample):</div>
+                  {preview.milestones.changedSamples.map(m => (
+                    <div key={m.id} style={{ color: "rgba(255,255,255,0.6)", padding: "2px 0" }}>
+                      <span style={{ color: "#D4A84B" }}>~</span> <code style={{ color: "#C9A84C" }}>{m.id}</code> {m.name}
+                      <div style={{ color: "rgba(255,255,255,0.4)", paddingLeft: 16, fontSize: 9 }}>fields: {m.diffs.join(", ")}</div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Mode picker */}
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+          How to merge
+        </div>
+        <ModeOption
+          value="keep-import"
+          title="🛡️ Smart merge — keep my progress, take fixes (recommended)"
+          sub="Add new items. For collisions, take metadata from import (month, due, names, links) BUT preserve your completion state, completion dates, and notes. Best for sync after Claude has made corrections."
+        />
+        <ModeOption
+          value="keep-mine"
+          title="✋ Conservative merge — only add new"
+          sub="Add new items. For collisions, keep your local version unchanged. Use when you've heavily edited tasks and don't want any imported changes touching them."
+        />
+        <ModeOption
+          value="replace"
+          title="💣 Full replace — wipe and overwrite"
+          danger
+          sub="Delete everything local and replace with the import. Use only for restoring backups. This will erase any local-only tasks or milestones."
+        />
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>
+            {mode === "replace" && preview.tasks.localOnlyCount + preview.milestones.localOnlyCount > 0 && (
+              <span style={{ color: "#E8453C" }}>⚠ Will delete {preview.tasks.localOnlyCount + preview.milestones.localOnlyCount} local-only items</span>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={onClose} style={{
+              padding: "8px 14px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)",
+              background: "transparent", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 12,
+            }}>Cancel</button>
+            <button onClick={handleApply} style={{
+              padding: "8px 14px", borderRadius: 6, border: "none",
+              background: mode === "replace" ? "rgba(232,69,60,0.2)" : "rgba(201,168,76,0.2)",
+              color: mode === "replace" ? "#E8453C" : "#C9A84C",
+              cursor: "pointer", fontSize: 12, fontWeight: 700,
+            }}>
+              {mode === "replace" ? "Replace All" : "Apply Merge"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MilestoneEditModal = ({ milestone, allTasks, onSave, onDelete, onClose, currentMonth }) => {
   const isEdit = !!milestone;
   const [name, setName] = useState(milestone?.name || "");
@@ -1712,6 +1911,7 @@ export default function ForgeApp() {
   const [milestones, setMilestones] = useState([]);
   const [showMilestoneEdit, setShowMilestoneEdit] = useState(false);
   const [editingMilestoneId, setEditingMilestoneId] = useState(null);
+  const [mergeImport, setMergeImport] = useState(null); // { incomingTasks, incomingMilestones, incomingHistory, incomingActivity, sourceLabel }
   const undoStack = useRef([]);
   const [undoToast, setUndoToast] = useState(null); // { message, snapshot }
 
@@ -1944,14 +2144,53 @@ export default function ForgeApp() {
     inp.onchange = async (e) => {
       try {
         const data = await importJSON(e.target.files[0]);
-        if (data.tasks) { const t = normalizeTaskMonths(data.tasks); setTasks(t); saveTasks(t); }
-        if (data.history) { setHistory(data.history); saveHistory(data.history); }
-        if (data.activity) { setActivity(data.activity); saveActivity(data.activity); }
-        if (data.milestones) { const m = normalizeMilestoneMonths(data.milestones); setMilestones(m); saveMilestones(m); }
-        alert("Import successful!");
+        // Open merge modal — actual write happens via applyMerge
+        setMergeImport({
+          incomingTasks: data.tasks ? normalizeTaskMonths(data.tasks) : null,
+          incomingMilestones: data.milestones ? normalizeMilestoneMonths(data.milestones) : null,
+          incomingHistory: data.history || null,
+          incomingActivity: data.activity || null,
+          sourceLabel: e.target.files[0].name,
+        });
       } catch (err) { alert("Import failed: " + err.message); }
     };
     inp.click();
+  };
+
+  const handleSeedImport = () => {
+    setMergeImport({
+      incomingTasks: SEED_TASKS,
+      incomingMilestones: SEED_MILESTONES,
+      incomingHistory: null,
+      incomingActivity: null,
+      sourceLabel: "Latest seed (built into app)",
+    });
+  };
+
+  const applyMerge = (mode) => {
+    if (!mergeImport) return;
+    const { incomingTasks, incomingMilestones, incomingHistory, incomingActivity } = mergeImport;
+    let summary = [];
+    if (incomingTasks) {
+      const r = mergeCollections(tasks, incomingTasks, mode);
+      setTasks(r.merged); saveTasks(r.merged);
+      summary.push(`Tasks: +${r.stats.added} new, ${r.stats.updated} updated, ${r.stats.kept} kept`);
+    }
+    if (incomingMilestones) {
+      const r = mergeCollections(milestones, incomingMilestones, mode);
+      setMilestones(r.merged); saveMilestones(r.merged);
+      summary.push(`Milestones: +${r.stats.added} new, ${r.stats.updated} updated, ${r.stats.kept} kept`);
+    }
+    // History and activity are append-style data — replace only if explicitly imported in replace mode
+    if (mode === "replace") {
+      if (incomingHistory) { setHistory(incomingHistory); saveHistory(incomingHistory); }
+      if (incomingActivity) { setActivity(incomingActivity); saveActivity(incomingActivity); }
+    }
+    setActivity(prev => [...prev, {
+      action: "imported", taskName: `Merge: ${mode}`, timestamp: new Date().toISOString(),
+    }]);
+    setMergeImport(null);
+    alert("Merge applied!\n\n" + summary.join("\n"));
   };
 
   const filtered = useMemo(() => {
@@ -2018,17 +2257,18 @@ export default function ForgeApp() {
         {!isMobile && <Btn onClick={() => setShowExport(true)}>📋 Export</Btn>}
         <Btn onClick={() => {
           if (isMobile) {
-            const items = ["export JSON", "import JSON", "obsidian export", "import MPL", "reset seed data"];
-            const choice = prompt("Options:\n1) export\n2) import\n3) obsidian export\n4) import MPL\n5) reset\n\nType number:");
+            const choice = prompt("Options:\n1) export JSON\n2) import JSON (merge)\n3) import latest seed (merge)\n4) obsidian export\n5) import MPL\n6) reset seed data\n\nType number:");
             if (choice === "1") exportJSON(tasks, history, activity, milestones);
             else if (choice === "2") handleImport();
-            else if (choice === "3") setShowExport(true);
-            else if (choice === "4") setShowImportMPL(true);
-            else if (choice === "5") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); setMilestones(SEED_MILESTONES); saveMilestones(SEED_MILESTONES); } }
+            else if (choice === "3") handleSeedImport();
+            else if (choice === "4") setShowExport(true);
+            else if (choice === "5") setShowImportMPL(true);
+            else if (choice === "6") { if (confirm("Reset all tasks to seed data?")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); setMilestones(SEED_MILESTONES); saveMilestones(SEED_MILESTONES); } }
           } else {
-            const action = prompt("Type 'export', 'import', 'mpl' (import MPL), or 'reset':");
+            const action = prompt("Type one of:\n  export        — download JSON backup\n  import        — upload JSON (merge)\n  seed          — import latest seed (merge)\n  mpl           — import MPL markdown\n  reset         — wipe and re-seed");
             if (action === "export") exportJSON(tasks, history, activity, milestones);
             else if (action === "import") handleImport();
+            else if (action === "seed") handleSeedImport();
             else if (action === "mpl") setShowImportMPL(true);
             else if (action === "reset") { if (confirm("Reset all tasks to seed data? This cannot be undone.")) { setTasks(SEED_TASKS); saveTasks(SEED_TASKS); setHistory([]); saveHistory([]); setActivity([]); saveActivity([]); setMilestones(SEED_MILESTONES); saveMilestones(SEED_MILESTONES); } }
           }
@@ -2258,6 +2498,19 @@ export default function ForgeApp() {
           onDelete={deleteMilestone}
           onClose={() => { setShowMilestoneEdit(false); setEditingMilestoneId(null); }}
           currentMonth={getGreekMonth()}
+        />
+      )}
+
+      {/* Merge Import Modal */}
+      {mergeImport && (
+        <MergeImportModal
+          incomingTasks={mergeImport.incomingTasks}
+          incomingMilestones={mergeImport.incomingMilestones}
+          sourceLabel={mergeImport.sourceLabel}
+          localTasks={tasks}
+          localMilestones={milestones}
+          onApply={applyMerge}
+          onClose={() => setMergeImport(null)}
         />
       )}
     </div>
