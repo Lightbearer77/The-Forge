@@ -61,11 +61,97 @@ export const getGreekMonth = (date = new Date()) => {
   return found ? found.id : "M01";
 };
 
+// ─── Greek Calendar — Day-of-Year Conversion ───
+// The perpetual calendar is day-of-year based: day 1 = Alpha 1, day 364 = Nu 28.
+// Day 365 (and 366 in leap years) is the annual Planning Day(s), outside any month.
+// This matches the vault's greekCal.js logic and survives leap years cleanly.
+const GREEK_LETTERS = ["Α", "Β", "Γ", "Δ", "Ε", "Ζ", "Η", "Θ", "Ι", "Κ", "Λ", "Μ", "Ν"];
+
+const dayOfYear = (date) => {
+  const start = new Date(date.getFullYear(), 0, 1);
+  const diff = date - start;
+  return Math.floor(diff / 86400000) + 1; // 1-indexed
+};
+
+// Convert a "YYYY-MM-DD" string OR a Date object → { monthId, letter, monthName, day, isPlanningDay, year }
+// Returns null for falsy/invalid input.
+export const gregToGreek = (input) => {
+  if (!input) return null;
+  const date = typeof input === "string" ? new Date(input + "T12:00:00") : input;
+  if (isNaN(date.getTime())) return null;
+  const doy = dayOfYear(date);
+  const year = date.getFullYear();
+  if (doy > 364) {
+    // Planning Day(s): Dec 31 always; Dec 30 also in leap years (but in our system Dec 30 = Nu 28, so only Dec 31 = planning normally)
+    // Actually with day-of-year math: 364 = Dec 30 in non-leap, Dec 30 in leap (since leap adds Feb 29 = doy 60)
+    // Wait: leap year - Feb 29 IS doy 60, so doy 364 = Dec 29 in leap years, doy 365 = Dec 30, doy 366 = Dec 31
+    // So in leap years, doy 365-366 are both planning. In non-leap, only doy 365 = Dec 31.
+    return { isPlanningDay: true, planningDayNumber: doy - 364, year, monthId: null, letter: "✦", monthName: "Planning Day", day: doy - 364 };
+  }
+  const monthIndex = Math.floor((doy - 1) / 28); // 0..12
+  const day = ((doy - 1) % 28) + 1;              // 1..28
+  const m = GREEK_MONTHS[monthIndex];
+  return {
+    monthId: m.id,
+    letter: GREEK_LETTERS[monthIndex],
+    monthName: m.name,
+    day,
+    isPlanningDay: false,
+    year,
+  };
+};
+
+// Convert { monthId, day, year } → "YYYY-MM-DD"
+// Or { isPlanningDay: true, planningDayNumber, year } → Dec 31 (or Dec 30 for leap day 1)
+// Returns null on invalid input.
+export const greekToGreg = (greek) => {
+  if (!greek) return null;
+  if (greek.isPlanningDay) {
+    const y = greek.year || new Date().getFullYear();
+    const isLeap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    // In leap years there are 2 planning days (Dec 30 & 31 by our day-of-year scheme).
+    // Non-leap: only Dec 31 is the planning day.
+    const n = greek.planningDayNumber || 1;
+    const dec = isLeap ? (n === 1 ? 30 : 31) : 31;
+    return `${y}-12-${String(dec).padStart(2, "0")}`;
+  }
+  const monthIndex = GREEK_MONTHS.findIndex(m => m.id === greek.monthId);
+  if (monthIndex < 0) return null;
+  const day = Math.min(28, Math.max(1, greek.day || 1));
+  const doy = monthIndex * 28 + day; // 1-indexed
+  const y = greek.year || new Date().getFullYear();
+  const date = new Date(y, 0, doy);  // Jan 1 + (doy - 1) days
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+};
+
+// Format helpers — short for pills, long for tooltips/details
+export const fmtGreek = (dateStr) => {
+  const g = gregToGreek(dateStr);
+  if (!g) return "";
+  if (g.isPlanningDay) return "✦ Planning";
+  return `${g.letter}${g.day}`;
+};
+
+export const fmtGreekLong = (dateStr) => {
+  const g = gregToGreek(dateStr);
+  if (!g) return "";
+  if (g.isPlanningDay) return `Planning Day ${g.planningDayNumber || 1} (${g.year})`;
+  return `${g.monthName} ${g.day}`;
+};
+
 export const getGreekWeek = (date = new Date()) => {
   const jan1 = new Date(date.getFullYear(), 0, 1);
   const days = Math.floor((date - jan1) / 86400000);
   return Math.ceil((days + jan1.getDay() + 1) / 7);
 };
+
+// Render an ISO date as "Apr 15" — the secondary subtitle next to Greek primary.
+export const fmtGreg = (isoDate) => isoDate
+  ? new Date(isoDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  : "";
+
+// Days in a Greek month — 28 for the regular months, 1 for the planning day.
+export const greekDaysInMonth = (id) => id === "PLANNING" ? 1 : 28;
 
 // Week boundaries (Mon-Sun) for Rebellion Block calculation
 export const getWeekBounds = (date = new Date()) => {
