@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek, getWeekBounds } from "./constants.js";
+import { GOALS, PRIORITIES, GREEK_MONTHS, LEVELS, STATUS_KEYS, STATUS_META, RECURRENCE_OPTIONS, selectStyle, inputStyle, getGreekMonth, getGreekWeek, getWeekBounds, gregToGreek, greekToGreg, fmtGreek, fmtGreekLong, fmtGreg } from "./constants.js";
 import { loadTasks, saveTasks, loadHistory, saveHistory, loadActivity, saveActivity, loadMilestones, saveMilestones, exportJSON, importJSON, generateSyncCode, applySyncCode, mergeCollections, computeMergePreview } from "./storage.js";
 import { SEED_TASKS, SEED_MILESTONES } from "./seed.js";
 import SovereigntyCalendar from './components/SovereigntyCalendar';
 
 // ═══════════════════════════════════════════
-// THE FORGE v6.3 — Active-window green · Due-today amber · Merge Import
-// Milestones · Batch · Sync · Timeline · MPL Import · Dependencies · AI
+// THE FORGE v6.4 — Perpetual calendar dates · Active-window green
+// Due-today amber · Merge Import · Milestones · Batch · Sync · Timeline
+// MPL Import · Dependencies · AI Panel
 // ═══════════════════════════════════════════
 
 // ─── Mobile Detection ───
@@ -45,8 +46,32 @@ const DUE_COLORS = {
   future:  "rgba(255,255,255,0.35)",
   none:    "rgba(255,255,255,0.35)",
 };
-const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+// Date formatting — Perpetual primary, Gregorian fallback.
+// fmtDate(iso) returns "Δ21" for inline string contexts (pills, range arrows).
+// For two-line display with the Gregorian subtitle, use <DateLabel iso={...} />.
+const fmtDate = (d) => fmtGreek(d);
+const fmtDateGreg = (d) => fmtGreg(d);
 const addDays = (d, n) => { const x = new Date(d + "T00:00:00"); x.setDate(x.getDate() + n); return x.toISOString().split("T")[0]; };
+
+// ─── Date Display Components ───
+// Greek primary, Gregorian subtitle. Use when there's vertical room.
+const DateLabel = ({ iso, color, weight = 400, align = "right" }) => {
+  if (!iso) return null;
+  return (
+    <div style={{ textAlign: align, lineHeight: 1.1 }} title={fmtGreg(iso)}>
+      <div style={{ fontSize: 11, fontWeight: weight, color, whiteSpace: "nowrap" }}>{fmtGreek(iso)}</div>
+      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", whiteSpace: "nowrap", marginTop: 1 }}>{fmtGreg(iso)}</div>
+    </div>
+  );
+};
+
+// Greek range "Δ10 → Δ21" with smaller Gregorian subtitle "Apr 10 → Apr 15"
+const DateRangeLabel = ({ start, due, color, weight = 400, align = "right" }) => (
+  <div style={{ textAlign: align, lineHeight: 1.1 }} title={`${fmtGreg(start)} → ${fmtGreg(due)}`}>
+    <div style={{ fontSize: 11, fontWeight: weight, color, whiteSpace: "nowrap" }}>{fmtGreek(start)} → {fmtGreek(due)}</div>
+    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", whiteSpace: "nowrap", marginTop: 1 }}>{fmtGreg(start)} → {fmtGreg(due)}</div>
+  </div>
+);
 
 // ─── Greek Month Normalization ───
 // Recomputes `month` from `due` date so imported/synced data
@@ -220,9 +245,90 @@ const TaskRow = ({ task, onToggle, onSelect, selected, childCount, childDone, bl
           {task.level && <Pill>L{task.level}</Pill>}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: DUE_COLORS[dueStatus(task)], fontWeight: dueStatus(task) === "today" ? 600 : 400, whiteSpace: "nowrap", textAlign: "right" }}>
-        {hasRange ? `${fmtDate(task.start)} → ${fmtDate(task.due)}` : fmtDate(task.due)}
+      {task.due && (hasRange
+        ? <DateRangeLabel start={task.start} due={task.due} color={DUE_COLORS[dueStatus(task)]} weight={dueStatus(task) === "today" ? 600 : 400} />
+        : <DateLabel iso={task.due} color={DUE_COLORS[dueStatus(task)]} weight={dueStatus(task) === "today" ? 600 : 400} />
+      )}
+    </div>
+  );
+};
+
+// ─── Greek Date Picker ───
+// Two dropdowns (Month, Day 1–28) + Planning Day toggle.
+// `value` is an ISO "YYYY-MM-DD" string (or empty). `onChange(iso)` fires.
+// Year is implicit — defaults to the current year, but if value is set,
+// it preserves the year of that value.
+const GreekDatePicker = ({ value, onChange, style }) => {
+  const greek = value ? gregToGreek(value) : null;
+  const year = greek?.year || new Date().getFullYear();
+  const isPlanning = !!greek?.isPlanningDay;
+
+  const setFromMonth = (newMonthId) => {
+    if (newMonthId === "PLANNING") {
+      onChange(greekToGreg({ isPlanningDay: true, planningDayNumber: 1, year }));
+    } else {
+      const day = greek?.day || 1;
+      onChange(greekToGreg({ monthId: newMonthId, day, year }));
+    }
+  };
+  const setFromDay = (newDay) => {
+    if (isPlanning) return; // shouldn't be reachable
+    const monthId = greek?.monthId || "M01";
+    onChange(greekToGreg({ monthId, day: newDay, year }));
+  };
+  const setFromYear = (newYear) => {
+    if (!greek) {
+      onChange(greekToGreg({ monthId: "M01", day: 1, year: newYear }));
+      return;
+    }
+    if (greek.isPlanningDay) {
+      onChange(greekToGreg({ isPlanningDay: true, planningDayNumber: 1, year: newYear }));
+    } else {
+      onChange(greekToGreg({ monthId: greek.monthId, day: greek.day, year: newYear }));
+    }
+  };
+  const clear = () => onChange("");
+
+  // Year options: current ± 3
+  const thisYear = new Date().getFullYear();
+  const yearOpts = [];
+  for (let y = thisYear - 1; y <= thisYear + 4; y++) yearOpts.push(y);
+
+  const ddStyle = { ...selectStyle, padding: "4px 6px", fontSize: 11, width: "auto" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, ...style }}>
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <select value={isPlanning ? "PLANNING" : (greek?.monthId || "")} onChange={e => setFromMonth(e.target.value)} style={{ ...ddStyle, flex: "1 1 auto", minWidth: 0 }}>
+          <option value="" disabled>Month</option>
+          {GREEK_MONTHS.map(m => (
+            <option key={m.id} value={m.id}>{m.name} ({m.id})</option>
+          ))}
+          <option value="PLANNING">★ Planning Day</option>
+        </select>
+        {!isPlanning && (
+          <select value={greek?.day || ""} onChange={e => setFromDay(parseInt(e.target.value))} style={{ ...ddStyle, width: 60, flex: "0 0 60px" }} disabled={!greek}>
+            <option value="" disabled>Day</option>
+            {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        )}
+        <select value={year} onChange={e => setFromYear(parseInt(e.target.value))} style={{ ...ddStyle, width: 64, flex: "0 0 64px" }}>
+          {yearOpts.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        {value && (
+          <button onClick={clear} title="Clear date" style={{
+            background: "none", border: "none", color: "rgba(255,255,255,0.3)",
+            fontSize: 14, cursor: "pointer", padding: "0 4px",
+          }}>✕</button>
+        )}
       </div>
+      {value && (
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", paddingLeft: 2 }}>
+          {fmtGreek(value)} · <span style={{ color: "rgba(255,255,255,0.3)" }}>{fmtGreg(value)} {year}</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -310,8 +416,8 @@ const DetailPanel = ({ task, sections, onUpdate, onDelete, onClose, tasks, onTog
       <Field label="Name"><input value={task.name} onChange={e => onUpdate(task.id, { name: e.target.value })} style={inputStyle} /></Field>
 
       <div style={{ display: "flex", gap: 8 }}>
-        <Field label="Start"><input type="date" value={task.start || ""} onChange={e => onUpdate(task.id, { start: e.target.value })} style={{ ...inputStyle, flex: 1 }} /></Field>
-        <Field label="Due"><input type="date" value={task.due || ""} onChange={e => onUpdate(task.id, { due: e.target.value })} style={{ ...inputStyle, flex: 1 }} /></Field>
+        <Field label="Start"><GreekDatePicker value={task.start || ""} onChange={(v) => onUpdate(task.id, { start: v })} style={{ flex: 1 }} /></Field>
+        <Field label="Due"><GreekDatePicker value={task.due || ""} onChange={(v) => onUpdate(task.id, { due: v })} style={{ flex: 1 }} /></Field>
       </div>
 
       <Field label="Goal"><select value={task.goal} onChange={e => onUpdate(task.id, { goal: e.target.value })} style={selectStyle}>
@@ -437,8 +543,8 @@ const NewTaskModal = ({ sections, onAdd, onClose, currentMonth }) => {
         <div style={{ fontSize: 16, fontWeight: 700, color: "#C9A84C", marginBottom: 16 }}>New Task</div>
         <Field label="Name"><input value={name} onChange={e => setName(e.target.value)} style={inputStyle} autoFocus onKeyDown={e => e.key === "Enter" && submit()} /></Field>
         <div style={{ display: "flex", gap: 8 }}>
-          <Field label="Start"><input type="date" value={start} onChange={e => setStart(e.target.value)} style={{ ...inputStyle, flex: 1 }} /></Field>
-          <Field label="Due"><input type="date" value={due} onChange={e => setDue(e.target.value)} style={{ ...inputStyle, flex: 1 }} /></Field>
+          <Field label="Start"><GreekDatePicker value={start} onChange={setStart} style={{ flex: 1 }} /></Field>
+          <Field label="Due"><GreekDatePicker value={due} onChange={setDue} style={{ flex: 1 }} /></Field>
         </div>
         <Field label="Goal"><select value={goal} onChange={e => setGoal(e.target.value)} style={selectStyle}>
           {Object.entries(GOALS).map(([k, v]) => <option key={k} value={k}>{v.icon} {k} — {v.name}</option>)}
@@ -578,7 +684,7 @@ const WeekFocusView = ({ tasks, allTasks, onToggle, onSelect, selectedId, isMobi
   return (
     <div style={{ padding: isMobile ? 10 : 20 }}>
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 12 }}>
-        W{getGreekWeek()} · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+        W{getGreekWeek()} · {fmtGreek(todayStr())} · <span style={{ color: "rgba(255,255,255,0.2)" }}>{new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</span>
       </div>
       {sections.map(s => s.tasks.length > 0 && (
         <div key={s.key} style={{ marginBottom: 16, borderRadius: 8, overflow: "hidden", background: s.bg, border: `1px solid ${s.border}` }}>
@@ -1017,7 +1123,12 @@ const CalendarView = ({ tasks, month, onMonthChange, onSelect, selectedId }) => 
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 16 }}>
         <button onClick={() => onMonthChange(Math.max(1, month - 1))} style={{ background: "none", border: "none", color: "#C9A84C", cursor: "pointer", fontSize: 18 }}>◀</button>
-        <span style={{ fontSize: 16, fontWeight: 600, color: "#e5e5e5" }}>{monthNames[month]} {year}</span>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "#e5e5e5" }}>{monthNames[month]} {year}</div>
+          <div style={{ fontSize: 10, color: "rgba(201,168,76,0.6)", marginTop: 2 }}>
+            Greek calendar shows 13 months × 28 days — see List/Timeline views for Greek dates
+          </div>
+        </div>
         <button onClick={() => onMonthChange(Math.min(12, month + 1))} style={{ background: "none", border: "none", color: "#C9A84C", cursor: "pointer", fontSize: 18 }}>▶</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
@@ -1029,12 +1140,18 @@ const CalendarView = ({ tasks, month, onMonthChange, onSelect, selectedId }) => 
           const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const isToday = dateStr === td;
           const dayTasks = tasks.filter(t => t.due === dateStr || (t.start && t.start <= dateStr && t.due >= dateStr));
+          const greek = gregToGreek(dateStr);
           return (
             <div key={day} style={{
               minHeight: 70, padding: 4, background: isToday ? "rgba(201,168,76,0.08)" : "rgba(255,255,255,0.02)",
               borderRadius: 4, border: isToday ? "1px solid rgba(201,168,76,0.3)" : "1px solid rgba(255,255,255,0.04)",
             }}>
-              <div style={{ fontSize: 11, color: isToday ? "#C9A84C" : "rgba(255,255,255,0.4)", fontWeight: isToday ? 700 : 400, marginBottom: 2 }}>{day}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
+                <div style={{ fontSize: 11, color: isToday ? "#C9A84C" : "rgba(255,255,255,0.4)", fontWeight: isToday ? 700 : 400 }}>{day}</div>
+                {greek && <div style={{ fontSize: 9, color: greek.isPlanningDay ? "#C9A84C" : "rgba(255,255,255,0.3)" }}>
+                  {greek.isPlanningDay ? "✦" : `${greek.letter}${greek.day}`}
+                </div>}
+              </div>
               {dayTasks.slice(0, 3).map(t => (
                 <div key={t.id} onClick={() => onSelect(t.id)} style={{
                   fontSize: 9, padding: "1px 3px", borderRadius: 2, marginBottom: 1,
@@ -1875,7 +1992,7 @@ const MilestoneEditModal = ({ milestone, allTasks, onSave, onDelete, onClose, cu
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           <Field label="Due Date">
-            <input type="date" value={due} onChange={e => setDue(e.target.value)} style={inputStyle} />
+            <GreekDatePicker value={due} onChange={setDue} />
           </Field>
           <Field label="MS Tag">
             <input value={msTag} onChange={e => setMsTag(e.target.value)} style={inputStyle} placeholder="MS4" />
